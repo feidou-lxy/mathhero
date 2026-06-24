@@ -1,0 +1,48 @@
+{
+  "studentId": "default",
+  "updatedAt": "2026-06-22T00:00:00.000Z",
+  "skills": {
+    "addition": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": 0,
+      "level": "average",
+      "levelLabel": "一般"
+    },
+    "subtraction": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": 0,
+      "level": "average",
+      "levelLabel": "一般"
+    },
+    "multiplication": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": 0,
+      "level": "average",
+      "levelLabel": "一般"
+    },
+    "division": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": 0,
+      "level": "average",
+      "levelLabel": "一般"
+    },
+    "mixed_calc": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": 0,
+      "level": "average",
+      "levelLabel": "一般"
+    },
+    "word_problem": {
+      "correct": 0,
+      "total": 0,
+      "accuracy": 0,
+      "level": "average",
+      "levelLabel": "一般"
+    }
+  }
+}
