@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { GROWTH_UPDATED_EVENT } from "@/lib/progress/growthSync";
 import { loadLevelProgress } from "@/lib/progress/growthStorage";
 import type { LevelProgress } from "@/lib/types/growth";
 
@@ -9,7 +10,10 @@ export function GrowthBadge() {
   const [levelProgress, setLevelProgress] = useState<LevelProgress | null>(null);
 
   useEffect(() => {
-    setLevelProgress(loadLevelProgress());
+    const refresh = () => setLevelProgress(loadLevelProgress());
+    refresh();
+    window.addEventListener(GROWTH_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, refresh);
   }, []);
 
   if (!levelProgress) {

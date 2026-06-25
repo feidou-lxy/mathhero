@@ -107,3 +107,20 @@ export function normalizeGrowth(data: unknown): StudentGrowth {
     updatedAt: record.updatedAt ?? new Date().toISOString(),
   };
 }
+
+export function mergeGrowthRecords(
+  a: StudentGrowth,
+  b: StudentGrowth,
+): StudentGrowth {
+  const totalStars = Math.max(a.totalStars, b.totalStars);
+  const updatedAt =
+    new Date(a.updatedAt).getTime() >= new Date(b.updatedAt).getTime()
+      ? a.updatedAt
+      : b.updatedAt;
+
+  return {
+    studentId: a.studentId || b.studentId,
+    totalStars,
+    updatedAt,
+  };
+}
