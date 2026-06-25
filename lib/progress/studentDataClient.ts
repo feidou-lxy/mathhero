@@ -3,6 +3,7 @@ import { loadProfileFromStorage } from "@/lib/profile/clientStorage";
 import { loadLearningPathProgress } from "@/lib/progress/learningPathStorage";
 import { loadMistakeBook } from "@/lib/mistakes/mistakeStorage";
 import { loadParentReports } from "@/lib/progress/parentReportStorage";
+import { loadStarBankAccount } from "@/lib/progress/starBankStorage";
 import type { StoredDailyTasks } from "@/lib/progress/dailyTasks";
 import type { StudentDataBundle } from "@/lib/types/studentData";
 import { normalizeStudentDataBundle } from "@/lib/progress/studentDataMerge";
@@ -15,6 +16,7 @@ const LEARNING_PATH_KEY = "mathhero-learning-path";
 const DAILY_TASKS_KEY = "mathhero-daily-tasks";
 const PARENT_REPORTS_KEY = "mathhero-parent-reports";
 const MISTAKE_BOOK_KEY = "mathhero-mistake-book";
+const STAR_BANK_KEY = "mathhero-star-bank";
 
 function readDailyTasksRaw(): StoredDailyTasks | null {
   if (typeof window === "undefined") return null;
@@ -38,6 +40,7 @@ export function loadLocalStudentDataBundle(): StudentDataBundle {
     dailyTasks: readDailyTasksRaw(),
     parentReports: { reports: loadParentReports() },
     mistakeBook: loadMistakeBook(),
+    starBank: loadStarBankAccount(),
   });
 }
 
@@ -59,6 +62,7 @@ export function applyStudentDataBundleToLocal(bundle: StudentDataBundle): void {
     JSON.stringify(normalized.parentReports),
   );
   localStorage.setItem(MISTAKE_BOOK_KEY, JSON.stringify(normalized.mistakeBook));
+  localStorage.setItem(STAR_BANK_KEY, JSON.stringify(normalized.starBank));
 
   notifyGrowthUpdated();
   notifyStudentDataUpdated();

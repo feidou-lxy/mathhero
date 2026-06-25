@@ -1,12 +1,13 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { GROWTH_UPDATED_EVENT } from "@/lib/progress/growthEvents";
 import { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 import { loadLevelProgress } from "@/lib/progress/growthStorage";
 import type { LevelProgress } from "@/lib/types/growth";
 
-/** 首页右上角紧凑等级展示 */
+/** 首页右上角紧凑等级展示，点击进入星星银行 */
 export function GrowthBadge() {
   const [levelProgress, setLevelProgress] = useState<LevelProgress | null>(null);
 
@@ -28,12 +29,13 @@ export function GrowthBadge() {
   }
 
   return (
-    <div
-      className="flex shrink-0 flex-col items-end gap-0.5 rounded-xl border border-black/[.08] bg-white px-3 py-2 dark:border-white/[.145] dark:bg-zinc-900"
+    <Link
+      href="/star-bank"
+      className="flex shrink-0 flex-col items-end gap-0.5 rounded-xl border border-black/[.08] bg-white px-3 py-2 transition-colors hover:border-amber-300 hover:bg-amber-50 dark:border-white/[.145] dark:bg-zinc-900 dark:hover:border-amber-800 dark:hover:bg-amber-950/30"
       title={
         levelProgress.isMaxLevel
-          ? "已达最高等级"
-          : `距 Lv.${levelProgress.level + 1} 还需 ${levelProgress.starsToNextLevel} 星`
+          ? "星星银行 · 已达最高等级"
+          : `星星银行 · 距 Lv.${levelProgress.level + 1} 还需 ${levelProgress.starsToNextLevel} 星`
       }
     >
       <p className="text-xs font-semibold leading-none text-black dark:text-zinc-50">
@@ -45,6 +47,6 @@ export function GrowthBadge() {
       <p className="text-sm font-semibold leading-none text-amber-600 dark:text-amber-400">
         ⭐ {levelProgress.totalStars}
       </p>
-    </div>
+    </Link>
   );
 }

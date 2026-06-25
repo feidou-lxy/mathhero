@@ -3,6 +3,11 @@ import { normalizeProfile, createEmptyProfile, judgeSkillLevel } from "@/lib/pro
 import { LEVEL_LABELS, PROFILE_SKILLS, type SkillStats } from "@/lib/types/profile";
 import { normalizeLearningPath, createInitialLearningPath, getWeekPracticeDates, PATH_WEEK_REQUIRED_DAYS } from "@/lib/progress/learningPath";
 import { normalizeMistakeBook, createEmptyMistakeBook } from "@/lib/mistakes/mistakeBook";
+import {
+  createEmptyStarBankAccount,
+  mergeStarBankAccounts,
+  normalizeStarBankAccount,
+} from "@/lib/progress/starBank";
 import type { StoredDailyTasks } from "@/lib/progress/dailyTasks";
 import type { StudentDataBundle } from "@/lib/types/studentData";
 import type { ParentLearningReport, ParentReportStore } from "@/lib/types/parentReport";
@@ -276,6 +281,7 @@ export function mergeStudentDataBundles(
     dailyTasks: mergeDailyTasks(left.dailyTasks, right.dailyTasks),
     parentReports: mergeParentReports(left.parentReports, right.parentReports),
     mistakeBook: mergeMistakeBooks(left.mistakeBook, right.mistakeBook),
+    starBank: mergeStarBankAccounts(left.starBank, right.starBank),
   };
 }
 
@@ -303,6 +309,7 @@ export function normalizeStudentDataBundle(data: unknown): StudentDataBundle {
         ? mergeParentReports({ reports: [] }, record.parentReports as ParentReportStore)
         : { reports: [] },
     mistakeBook: normalizeMistakeBook(record.mistakeBook),
+    starBank: normalizeStarBankAccount(record.starBank),
   };
 }
 
@@ -318,5 +325,6 @@ export function createEmptyStudentDataBundle(
     dailyTasks: null,
     parentReports: { reports: [] },
     mistakeBook: createEmptyMistakeBook(),
+    starBank: createEmptyStarBankAccount(),
   };
 }

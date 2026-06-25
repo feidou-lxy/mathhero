@@ -43,6 +43,19 @@ export function addStars(growth: StudentGrowth, amount: number): StudentGrowth {
   };
 }
 
+export function spendStars(
+  growth: StudentGrowth,
+  amount: number,
+): StudentGrowth | null {
+  if (amount <= 0 || growth.totalStars < amount) return null;
+
+  return {
+    ...growth,
+    totalStars: growth.totalStars - amount,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 export function getLevelForStars(totalStars: number): LevelDefinition {
   let current = LEVEL_DEFINITIONS[0];
 

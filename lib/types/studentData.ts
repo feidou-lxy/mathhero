@@ -1,6 +1,7 @@
 import type { StudentGrowth } from "@/lib/types/growth";
 import type { ParentReportStore } from "@/lib/types/parentReport";
 import type { StudentProfile } from "@/lib/types/profile";
+import type { StarBankAccount } from "@/lib/types/starBank";
 import type { MistakeBook } from "@/lib/types/mistakes";
 import type { LearningPathProgress } from "@/types/math";
 import type { StoredDailyTasks } from "@/lib/progress/dailyTasks";
@@ -15,4 +16,5 @@ export type StudentDataBundle = {
   dailyTasks: StoredDailyTasks | null;
   parentReports: ParentReportStore;
   mistakeBook: MistakeBook;
+  starBank: StarBankAccount;
 };
