@@ -1,3 +1,4 @@
+import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
 import { createEmptyProfile, normalizeProfile } from "@/lib/profile/studentProfile";
 import type { RecordAnswerInput, StudentProfile } from "@/lib/types/profile";
 import { recordProfileAnswer } from "@/lib/profile/studentProfile";
@@ -19,6 +20,7 @@ export function loadProfileFromStorage(): StudentProfile {
 export function saveProfileToStorage(profile: StudentProfile): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
+  scheduleStudentDataPush();
 }
 
 export function recordAndSaveAnswer(input: RecordAnswerInput): StudentProfile {

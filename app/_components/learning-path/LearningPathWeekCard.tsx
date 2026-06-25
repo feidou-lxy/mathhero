@@ -1,5 +1,9 @@
 import type { LearningPathWeekConfig } from "@/lib/curriculum/learningPathConfig";
 import { formatWeekTrainingSummary } from "@/lib/curriculum/learningPathConfig";
+import {
+  getWeekDaysCompleted,
+  PATH_WEEK_REQUIRED_DAYS,
+} from "@/lib/progress/learningPath";
 import type { LearningPathWeekRecord } from "@/types/math";
 
 type LearningPathWeekCardProps = {
@@ -9,9 +13,14 @@ type LearningPathWeekCardProps = {
   compact?: boolean;
 };
 
-function getStatusLabel(status: LearningPathWeekRecord["status"]): string {
+function getStatusLabel(
+  status: LearningPathWeekRecord["status"],
+  daysCompleted: number,
+): string {
   if (status === "completed") return "已完成";
-  if (status === "in_progress") return "进行中";
+  if (status === "in_progress") {
+    return daysCompleted > 0 ? `${daysCompleted}/${PATH_WEEK_REQUIRED_DAYS} 天` : "进行中";
+  }
   if (status === "available") return "可练习";
   return "未解锁";
 }
@@ -37,6 +46,14 @@ export function LearningPathWeekCard({
 }: LearningPathWeekCardProps) {
   const { focusLabels, basicLabels, thinkingLabels } =
     formatWeekTrainingSummary(config);
+  const daysCompleted = getWeekDaysCompleted(record);
+  const dayProgressPercent =
+    record.status === "completed"
+      ? 100
+      : Math.min(
+          100,
+          Math.round((daysCompleted / PATH_WEEK_REQUIRED_DAYS) * 100),
+        );
 
   return (
     <div
@@ -70,9 +87,29 @@ export function LearningPathWeekCard({
         <span
           className={`shrink-0 rounded-full px-2.5 py-1 text-xs font-medium ${getStatusClass(record.status)}`}
         >
-          {getStatusLabel(record.status)}
+          {getStatusLabel(record.status, daysCompleted)}
         </span>
       </div>
+
+      {record.status !== "locked" && record.status !== "completed" && (
+        <div className="mb-3">
+          <div className="mb-1 flex items-center justify-between text-xs text-zinc-500 dark:text-zinc-400">
+            <span>本周打卡</span>
+            <span>
+              {daysCompleted}/{PATH_WEEK_REQUIRED_DAYS} 天
+            </span>
+          </div>
+          <div className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-sky-400 transition-all dark:bg-sky-500"
+              style={{ width: `${dayProgressPercent}%` }}
+            />
+          </div>
+          <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+            每天完成 1 次练习（7 题，正确率 ≥ 60%）计 1 天
+          </p>
+        </div>
+      )}
 
       {!compact && (
         <dl className="mt-3 space-y-2 text-sm">

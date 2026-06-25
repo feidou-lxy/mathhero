@@ -12,7 +12,19 @@ import type {
 } from "@/types/math";
 
 const DEFAULT_STUDENT_ID = "default";
+
 export const PATH_WEEK_MIN_ACCURACY = 0.6;
+/** 每周需完成的天数（每天 1 次练习） */
+export const PATH_WEEK_REQUIRED_DAYS = 5;
+
+export type PathWeekDayResult = {
+  accuracyPassed: boolean;
+  todayAlreadyRecorded: boolean;
+  daysCompleted: number;
+  daysRequired: number;
+  weekCompleted: boolean;
+  weekUnlocked: boolean;
+};
 
 export function parsePathWeekParam(param: string | null): number | null {
   if (!param) return null;
@@ -23,6 +35,67 @@ export function parsePathWeekParam(param: string | null): number | null {
   return n;
 }
 
+function isValidStatus(value: unknown): value is LearningPathWeekStatus {
+  return (
+    value === "locked" ||
+    value === "available" ||
+    value === "in_progress" ||
+    value === "completed"
+  );
+}
+
+function isValidPracticeDate(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+export function getWeekPracticeDates(record: LearningPathWeekRecord): string[] {
+  if (!Array.isArray(record.practiceDates)) return [];
+  return [...new Set(record.practiceDates.filter(isValidPracticeDate))].sort();
+}
+
+export function getWeekDaysCompleted(record: LearningPathWeekRecord): number {
+  const dates = getWeekPracticeDates(record);
+  if (dates.length > 0) return dates.length;
+  if (record.status === "completed") return PATH_WEEK_REQUIRED_DAYS;
+  return 0;
+}
+
+export function hasPracticedWeekOnDate(
+  record: LearningPathWeekRecord,
+  practiceDate: string,
+): boolean {
+  return getWeekPracticeDates(record).includes(practiceDate);
+}
+
+function reconcileWeekRecord(
+  record: LearningPathWeekRecord,
+): LearningPathWeekRecord {
+  const practiceDates = getWeekPracticeDates(record);
+  const daysCompleted = practiceDates.length;
+
+  if (record.status === "completed") {
+    return {
+      ...record,
+      practiceDates,
+      completedAt: record.completedAt,
+    };
+  }
+
+  if (daysCompleted >= PATH_WEEK_REQUIRED_DAYS) {
+    return {
+      ...record,
+      practiceDates,
+      status: "completed",
+      completedAt: record.completedAt ?? new Date().toISOString(),
+    };
+  }
+
+  return {
+    ...record,
+    practiceDates,
+  };
+}
+
 export function createInitialLearningPath(
   studentId = DEFAULT_STUDENT_ID,
 ): LearningPathProgress {
@@ -31,6 +104,7 @@ export function createInitialLearningPath(
   const weeks: LearningPathWeekRecord[] = LEARNING_PATH_WEEKS.map((w) => ({
     weekNumber: w.weekNumber,
     status: w.weekNumber === 1 ? "in_progress" : "locked",
+    practiceDates: [],
   }));
 
   return {
@@ -61,14 +135,17 @@ export function normalizeLearningPath(data: unknown): LearningPathProgress {
       }
       const idx = weekNumber - 1;
       const status = isValidStatus(w.status) ? w.status : base.weeks[idx].status;
-      base.weeks[idx] = {
+      base.weeks[idx] = reconcileWeekRecord({
         weekNumber,
         status,
         completedAt:
           typeof w.completedAt === "string" ? w.completedAt : undefined,
         bestAccuracy:
           typeof w.bestAccuracy === "number" ? w.bestAccuracy : undefined,
-      };
+        practiceDates: Array.isArray(w.practiceDates)
+          ? w.practiceDates.filter(isValidPracticeDate)
+          : [],
+      });
     }
   }
 
@@ -88,15 +165,6 @@ export function normalizeLearningPath(data: unknown): LearningPathProgress {
       typeof record.startDate === "string" ? record.startDate : base.startDate,
     updatedAt: new Date().toISOString(),
   };
-}
-
-function isValidStatus(value: unknown): value is LearningPathWeekStatus {
-  return (
-    value === "locked" ||
-    value === "available" ||
-    value === "in_progress" ||
-    value === "completed"
-  );
 }
 
 export function getWeekRecord(
@@ -138,45 +206,142 @@ export function markPathWeekInProgress(
   };
 }
 
-export function completePathWeek(
+function updateWeekBestAccuracy(
   progress: LearningPathProgress,
   weekNumber: number,
   accuracy: number,
 ): LearningPathProgress {
-  if (!canPracticeWeek(progress, weekNumber)) return progress;
-  if (accuracy < PATH_WEEK_MIN_ACCURACY) return progress;
-
-  const now = new Date().toISOString();
   const weeks = progress.weeks.map((w) => {
     if (w.weekNumber !== weekNumber) return w;
     const bestAccuracy =
       w.bestAccuracy === undefined
         ? Math.round(accuracy * 100)
         : Math.max(w.bestAccuracy, Math.round(accuracy * 100));
-    return {
-      ...w,
-      status: "completed" as const,
-      completedAt: now,
-      bestAccuracy,
-    };
+    return { ...w, bestAccuracy };
   });
 
+  return {
+    ...progress,
+    weeks,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+export function recordPathWeekDailyPractice(
+  progress: LearningPathProgress,
+  weekNumber: number,
+  accuracy: number,
+  practiceDate: string,
+): { progress: LearningPathProgress; result: PathWeekDayResult } {
+  const record = getWeekRecord(progress, weekNumber);
+  const baseResult: PathWeekDayResult = {
+    accuracyPassed: accuracy >= PATH_WEEK_MIN_ACCURACY,
+    todayAlreadyRecorded: false,
+    daysCompleted: getWeekDaysCompleted(record),
+    daysRequired: PATH_WEEK_REQUIRED_DAYS,
+    weekCompleted: record.status === "completed",
+    weekUnlocked: false,
+  };
+
+  if (!canPracticeWeek(progress, weekNumber)) {
+    return { progress, result: baseResult };
+  }
+
+  if (!baseResult.accuracyPassed) {
+    return {
+      progress: updateWeekBestAccuracy(progress, weekNumber, accuracy),
+      result: baseResult,
+    };
+  }
+
+  const dates = getWeekPracticeDates(record);
+  if (dates.includes(practiceDate)) {
+    return {
+      progress: updateWeekBestAccuracy(progress, weekNumber, accuracy),
+      result: {
+        ...baseResult,
+        todayAlreadyRecorded: true,
+        daysCompleted: dates.length,
+      },
+    };
+  }
+
+  const nextDates = [...dates, practiceDate].sort();
+  const now = new Date().toISOString();
+  const willCompleteWeek = nextDates.length >= PATH_WEEK_REQUIRED_DAYS;
+
   let currentWeek = progress.currentWeek;
-  if (weekNumber === currentWeek && weekNumber < LEARNING_PATH_TOTAL_WEEKS) {
+  let weekUnlocked = false;
+
+  const weeks = progress.weeks.map((w) => {
+    if (w.weekNumber !== weekNumber) return w;
+
+    const bestAccuracy =
+      w.bestAccuracy === undefined
+        ? Math.round(accuracy * 100)
+        : Math.max(w.bestAccuracy, Math.round(accuracy * 100));
+
+    if (willCompleteWeek) {
+      return reconcileWeekRecord({
+        ...w,
+        practiceDates: nextDates,
+        bestAccuracy,
+        status: "completed",
+        completedAt: w.completedAt ?? now,
+      });
+    }
+
+    return reconcileWeekRecord({
+      ...w,
+      practiceDates: nextDates,
+      bestAccuracy,
+      status: w.status === "locked" ? "in_progress" : w.status,
+    });
+  });
+
+  if (
+    willCompleteWeek &&
+    weekNumber === currentWeek &&
+    weekNumber < LEARNING_PATH_TOTAL_WEEKS
+  ) {
     const nextWeek = weekNumber + 1;
     weeks[nextWeek - 1] = {
       ...weeks[nextWeek - 1],
       status: "in_progress",
     };
     currentWeek = nextWeek;
+    weekUnlocked = true;
   }
 
-  return {
+  const updated: LearningPathProgress = {
     ...progress,
     currentWeek,
     weeks,
     updatedAt: now,
   };
+
+  return {
+    progress: updated,
+    result: {
+      accuracyPassed: true,
+      todayAlreadyRecorded: false,
+      daysCompleted: nextDates.length,
+      daysRequired: PATH_WEEK_REQUIRED_DAYS,
+      weekCompleted: willCompleteWeek,
+      weekUnlocked,
+    },
+  };
+}
+
+/** @deprecated 使用 recordPathWeekDailyPractice */
+export function completePathWeek(
+  progress: LearningPathProgress,
+  weekNumber: number,
+  accuracy: number,
+): LearningPathProgress {
+  const today = new Date().toISOString().slice(0, 10);
+  return recordPathWeekDailyPractice(progress, weekNumber, accuracy, today)
+    .progress;
 }
 
 export function buildLearningPathView(
@@ -213,4 +378,49 @@ export function getCurrentPathPracticeHref(
   progress: LearningPathProgress,
 ): string {
   return getPathWeekPracticeHref(progress.currentWeek);
+}
+
+export function formatPathWeekReviewMessage(
+  result: PathWeekDayResult | null,
+  pathWeek: number,
+  pathProgress: LearningPathProgress | null,
+): { tone: "success" | "warning"; message: string } {
+  if (!result) {
+    return {
+      tone: "warning",
+      message: "正确率需要 ≥ 60% 才能计入本周打卡，再练一次吧！",
+    };
+  }
+
+  if (!result.accuracyPassed) {
+    return {
+      tone: "warning",
+      message: "正确率需要 ≥ 60% 才能计入本周打卡，再练一次吧！",
+    };
+  }
+
+  if (result.todayAlreadyRecorded) {
+    return {
+      tone: "success",
+      message: `今日打卡已完成（${result.daysCompleted}/${result.daysRequired} 天），明天再来吧～`,
+    };
+  }
+
+  if (result.weekCompleted) {
+    if (pathProgress && pathProgress.currentWeek > pathWeek) {
+      return {
+        tone: "success",
+        message: `本周 ${result.daysRequired} 天全部完成！已解锁第 ${pathProgress.currentWeek} 周 🎉`,
+      };
+    }
+    return {
+      tone: "success",
+      message: `本周 ${result.daysRequired} 天全部完成！回首页继续下一周吧 🎉`,
+    };
+  }
+
+  return {
+    tone: "success",
+    message: `今日打卡成功！本周进度 ${result.daysCompleted}/${result.daysRequired} 天，继续加油 💪`,
+  };
 }

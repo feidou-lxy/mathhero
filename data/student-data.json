@@ -1,0 +1,170 @@
+{
+  "studentId": "default",
+  "updatedAt": "2026-06-25T09:57:49.025Z",
+  "profile": {
+    "studentId": "default",
+    "updatedAt": "2026-06-25T09:57:49.025Z",
+    "skills": {
+      "addition": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "subtraction": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "multiplication": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "division": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "two_step_word": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "time_money": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "pattern_sequence": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "logic_reasoning": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "shape_pattern": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "multi_step_word": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      },
+      "clever_calc": {
+        "correct": 0,
+        "total": 0,
+        "accuracy": 0,
+        "level": "average",
+        "levelLabel": "一般"
+      }
+    }
+  },
+  "growth": {
+    "studentId": "default",
+    "totalStars": 20,
+    "updatedAt": "2026-06-25T09:57:49.025Z"
+  },
+  "learningPath": {
+    "studentId": "default",
+    "currentWeek": 1,
+    "weeks": [
+      {
+        "weekNumber": 1,
+        "status": "in_progress"
+      },
+      {
+        "weekNumber": 2,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 3,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 4,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 5,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 6,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 7,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 8,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 9,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 10,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 11,
+        "status": "locked"
+      },
+      {
+        "weekNumber": 12,
+        "status": "locked"
+      }
+    ],
+    "startDate": "2026-06-24",
+    "updatedAt": "2026-06-25T09:57:49.026Z"
+  },
+  "dailyTasks": {
+    "date": "2026-06-25",
+    "tasks": [
+      {
+        "id": "daily_main",
+        "type": "daily_main",
+        "title": "今日闯关",
+        "description": "大宝小朋友，来挑战一下吧！",
+        "required": true,
+        "status": "in_progress"
+      }
+    ],
+    "streakDays": 0,
+    "lastStreakDate": null
+  },
+  "parentReports": {
+    "reports": []
+  },
+  "mistakeBook": {
+    "entries": [],
+    "updatedAt": "2026-06-25T09:57:49.025Z"
+  }
+}

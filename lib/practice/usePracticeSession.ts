@@ -17,7 +17,7 @@ import {
 } from "@/lib/progress/learningPathStorage";
 import {
   parsePathWeekParam,
-  PATH_WEEK_MIN_ACCURACY,
+  type PathWeekDayResult,
 } from "@/lib/progress/learningPath";
 import { getWeekConfig } from "@/lib/curriculum/learningPathConfig";
 import type { LearningPathProgress } from "@/types/math";
@@ -26,6 +26,7 @@ import type { ParentLearningReport } from "@/lib/types/parentReport";
 import {
   parseFocusSkillParam,
 } from "@/lib/mastery/skillMastery";
+import { getTodayDateString } from "@/lib/ai/mockQuestions";
 import { TEACHER_UNAVAILABLE_MESSAGE } from "@/lib/ai/teacherCharacter";
 import { SKILL_LABELS, type ProfileSkill } from "@/types/math";
 import { awardQuestionStars, loadLevelProgress } from "@/lib/progress/growthStorage";
@@ -118,6 +119,9 @@ export function usePracticeSession() {
     null,
   );
   const [pathWeekPassed, setPathWeekPassed] = useState<boolean | null>(null);
+  const [pathWeekDayResult, setPathWeekDayResult] = useState<PathWeekDayResult | null>(
+    null,
+  );
   const [focusSkill, setFocusSkill] = useState<ProfileSkill | null>(null);
   const [parentReport, setParentReport] = useState<ParentLearningReport | null>(
     null,
@@ -478,6 +482,7 @@ export function usePracticeSession() {
     taskCompletedRef.current = false;
     pathWeekCompletedRef.current = false;
     setPathWeekPassed(null);
+    setPathWeekDayResult(null);
     void loadQuestions(true);
   }, [loadQuestions]);
 
@@ -513,13 +518,19 @@ export function usePracticeSession() {
     if (total === 0) return;
 
     pathWeekCompletedRef.current = true;
-    const accuracy = correctCount / total;
-    const updated = completePathWeekOnReview(pathWeek, correctCount, total);
-    if (updated) {
-      setPathProgress(updated);
+    const practiceDate = practiceSet?.date ?? getTodayDateString();
+    const outcome = completePathWeekOnReview(
+      pathWeek,
+      correctCount,
+      total,
+      practiceDate,
+    );
+    if (outcome) {
+      setPathProgress(outcome.progress);
+      setPathWeekDayResult(outcome.result);
+      setPathWeekPassed(outcome.result.accuracyPassed);
     }
-    setPathWeekPassed(accuracy >= PATH_WEEK_MIN_ACCURACY);
-  }, [phase, pathWeek, correctCount, total, practiceSource]);
+  }, [phase, pathWeek, correctCount, total, practiceSource, practiceSet?.date]);
 
   useEffect(() => {
     if (phase !== "review" || reportSavedRef.current || !sessionSummary) return;
@@ -667,6 +678,7 @@ export function usePracticeSession() {
     pathWeek,
     pathWeekConfig,
     pathWeekPassed,
+    pathWeekDayResult,
     pathProgress,
     parentReport,
   };

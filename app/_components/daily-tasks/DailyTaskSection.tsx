@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 import { loadDailyTaskProgress } from "@/lib/progress/dailyTaskStorage";
 import type { DailyTaskProgress } from "@/lib/types/dailyTasks";
 import { DailyTaskCard } from "./DailyTaskCard";
@@ -10,7 +11,10 @@ export function DailyTaskSection() {
   const [progress, setProgress] = useState<DailyTaskProgress | null>(null);
 
   useEffect(() => {
-    setProgress(loadDailyTaskProgress());
+    const refresh = () => setProgress(loadDailyTaskProgress());
+    refresh();
+    window.addEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
   }, []);
 
   if (!progress) {

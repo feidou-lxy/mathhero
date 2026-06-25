@@ -1,4 +1,5 @@
 import { buildParentReport, type BuildParentReportInput } from "@/lib/learning/parentReport";
+import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
 import type {
   ParentLearningReport,
   ParentReportStore,
@@ -22,6 +23,7 @@ function readRaw(): unknown {
 function writeRaw(store: ParentReportStore): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(store));
+  scheduleStudentDataPush();
 }
 
 function isValidReport(value: unknown): value is ParentLearningReport {

@@ -7,6 +7,7 @@ import {
   toDailyTaskPlan,
   type StoredDailyTasks,
 } from "@/lib/progress/dailyTasks";
+import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
 import type { DailyTaskPlan, DailyTaskProgress } from "@/lib/types/dailyTasks";
 
 const STORAGE_KEY = "mathhero-daily-tasks";
@@ -26,6 +27,7 @@ function readRaw(): StoredDailyTasks | null {
 function writeRaw(stored: StoredDailyTasks): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(stored));
+  scheduleStudentDataPush();
 }
 
 export function loadDailyTaskPlan(): DailyTaskPlan {

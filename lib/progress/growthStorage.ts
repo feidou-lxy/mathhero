@@ -7,7 +7,7 @@ import {
   PERFECT_BONUS_STARS,
 } from "@/lib/progress/growth";
 import type { Question } from "@/lib/types/practice";
-import { pushGrowthToServer } from "@/lib/progress/growthServerApi";
+import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
 import { notifyGrowthUpdated } from "@/lib/progress/growthEvents";
 import type { LevelProgress, StudentGrowth } from "@/lib/types/growth";
 
@@ -36,7 +36,7 @@ export function loadGrowth(): StudentGrowth {
 
 export function saveGrowth(growth: StudentGrowth): void {
   writeRaw(growth);
-  void pushGrowthToServer(growth);
+  scheduleStudentDataPush();
   notifyGrowthUpdated();
 }
 

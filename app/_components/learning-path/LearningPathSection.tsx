@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 import { LEARNING_PATH_WEEKS } from "@/lib/curriculum/learningPathConfig";
 import { getWeekRecord } from "@/lib/progress/learningPath";
 import { loadLearningPathView } from "@/lib/progress/learningPathStorage";
@@ -14,9 +15,14 @@ export function LearningPathSection() {
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
-    const loaded = loadLearningPathView();
-    setView(loaded);
-    setActiveWeekIndex(loaded.progress.currentWeek - 1);
+    const refresh = () => {
+      const loaded = loadLearningPathView();
+      setView(loaded);
+      setActiveWeekIndex(loaded.progress.currentWeek - 1);
+    };
+    refresh();
+    window.addEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
+    return () => window.removeEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
   }, []);
 
   useEffect(() => {
@@ -142,7 +148,8 @@ export function LearningPathSection() {
       </div>
 
       <p className="text-center text-xs text-zinc-500 dark:text-zinc-400">
-        左右滑动查看每周内容 · 第 {activeWeek?.weekNumber ?? activeWeekIndex + 1} 周
+        左右滑动查看每周内容 · 每周练 5 天通关 · 第{" "}
+        {activeWeek?.weekNumber ?? activeWeekIndex + 1} 周
         {activeWeek ? ` · ${activeWeek.title}` : ""}
       </p>
     </section>

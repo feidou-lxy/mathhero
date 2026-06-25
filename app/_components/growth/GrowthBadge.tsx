@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { GROWTH_UPDATED_EVENT } from "@/lib/progress/growthSync";
+import { GROWTH_UPDATED_EVENT } from "@/lib/progress/growthEvents";
+import { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 import { loadLevelProgress } from "@/lib/progress/growthStorage";
 import type { LevelProgress } from "@/lib/types/growth";
 
@@ -13,7 +14,11 @@ export function GrowthBadge() {
     const refresh = () => setLevelProgress(loadLevelProgress());
     refresh();
     window.addEventListener(GROWTH_UPDATED_EVENT, refresh);
-    return () => window.removeEventListener(GROWTH_UPDATED_EVENT, refresh);
+    window.addEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
+    return () => {
+      window.removeEventListener(GROWTH_UPDATED_EVENT, refresh);
+      window.removeEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
+    };
   }, []);
 
   if (!levelProgress) {

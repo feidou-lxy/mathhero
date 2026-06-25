@@ -13,6 +13,8 @@ import type {
   QuestionAnswerResult,
   SessionSummary,
 } from "@/types/math";
+import type { PathWeekDayResult } from "@/lib/progress/learningPath";
+import { formatPathWeekReviewMessage } from "@/lib/progress/learningPath";
 import type { LearningPathWeekConfig } from "@/lib/curriculum/learningPathConfig";
 import type { LearningPathProgress } from "@/types/math";
 import type { ParentLearningReport } from "@/lib/types/parentReport";
@@ -41,6 +43,7 @@ type PracticeReviewSectionProps = {
   pathWeek: number | null;
   pathWeekConfig: LearningPathWeekConfig | null;
   pathWeekPassed: boolean | null;
+  pathWeekDayResult: PathWeekDayResult | null;
   pathProgress: LearningPathProgress | null;
   parentReport: ParentLearningReport | null;
   onRestart: () => void;
@@ -63,6 +66,7 @@ export function PracticeReviewSection({
   pathWeek,
   pathWeekConfig,
   pathWeekPassed,
+  pathWeekDayResult,
   pathProgress,
   parentReport,
   onRestart,
@@ -80,6 +84,11 @@ export function PracticeReviewSection({
     parentReport?.teacherComment ??
     sessionSummary?.comment ??
     buildTeacherSessionComment(correctCount, total);
+
+  const pathWeekReview =
+    pathWeek && pathWeekConfig
+      ? formatPathWeekReviewMessage(pathWeekDayResult, pathWeek, pathProgress)
+      : null;
 
   return (
     <div>
@@ -106,17 +115,17 @@ export function PracticeReviewSection({
         {backLabel}
       </Link>
 
-      {pathWeek && pathWeekConfig && practiceSource === "normal" && (
+      {pathWeek && pathWeekConfig && practiceSource === "normal" && pathWeekReview && (
         <div
           className={`mb-6 rounded-2xl border px-5 py-4 ${
-            pathWeekPassed
+            pathWeekReview.tone === "success"
               ? "border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30"
               : "border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950/30"
           }`}
         >
           <p
             className={`text-sm font-medium ${
-              pathWeekPassed
+              pathWeekReview.tone === "success"
                 ? "text-green-800 dark:text-green-200"
                 : "text-amber-800 dark:text-amber-200"
             }`}
@@ -125,16 +134,12 @@ export function PracticeReviewSection({
           </p>
           <p
             className={`mt-1 text-sm ${
-              pathWeekPassed
+              pathWeekReview.tone === "success"
                 ? "text-green-700 dark:text-green-300"
                 : "text-amber-700 dark:text-amber-300"
             }`}
           >
-            {pathWeekPassed
-              ? pathProgress && pathProgress.currentWeek > pathWeek
-                ? `本周通关！已解锁第 ${pathProgress.currentWeek} 周 🎉`
-                : "本周通关！回首页继续下一周吧 🎉"
-              : "正确率需要 ≥ 60% 才能通关本周，再练一次吧！"}
+            {pathWeekReview.message}
           </p>
         </div>
       )}

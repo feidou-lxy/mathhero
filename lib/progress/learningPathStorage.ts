@@ -1,10 +1,12 @@
 import {
   buildLearningPathView,
-  completePathWeek,
   createInitialLearningPath,
   markPathWeekInProgress,
   normalizeLearningPath,
+  recordPathWeekDailyPractice,
+  type PathWeekDayResult,
 } from "@/lib/progress/learningPath";
+import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
 import type { LearningPathProgress, LearningPathView } from "@/types/math";
 
 const STORAGE_KEY = "mathhero-learning-path";
@@ -21,21 +23,22 @@ function readRaw(): unknown {
   }
 }
 
-function writeRaw(progress: LearningPathProgress): void {
+function writeRaw(progress: LearningPathProgress, sync = true): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(progress));
+  if (sync) scheduleStudentDataPush();
 }
 
 export function loadLearningPathProgress(): LearningPathProgress {
   const stored = readRaw();
   if (!stored) {
     const initial = createInitialLearningPath();
-    writeRaw(initial);
+    writeRaw(initial, false);
     return initial;
   }
 
   const normalized = normalizeLearningPath(stored);
-  writeRaw(normalized);
+  writeRaw(normalized, false);
   return normalized;
 }
 
@@ -62,15 +65,19 @@ export function completePathWeekOnReview(
   weekNumber: number,
   correctCount: number,
   total: number,
-): LearningPathProgress | null {
+  practiceDate: string,
+): { progress: LearningPathProgress; result: PathWeekDayResult } | null {
   if (total === 0) return null;
 
   const accuracy = correctCount / total;
   const before = loadLearningPathProgress();
-  const after = completePathWeek(before, weekNumber, accuracy);
-
-  if (after === before) return null;
+  const { progress: after, result } = recordPathWeekDailyPractice(
+    before,
+    weekNumber,
+    accuracy,
+    practiceDate,
+  );
 
   saveLearningPathProgress(after);
-  return after;
+  return { progress: after, result };
 }

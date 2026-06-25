@@ -13,6 +13,7 @@ import type {
   MistakeEntry,
   RecordMistakeInput,
 } from "@/lib/types/mistakes";
+import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
 import type { QuestionCategory } from "@/lib/types/practice";
 
 const STORAGE_KEY = "mathhero-mistake-book";
@@ -32,6 +33,7 @@ function readRaw(): MistakeBook {
 function writeRaw(book: MistakeBook): void {
   if (typeof window === "undefined") return;
   localStorage.setItem(STORAGE_KEY, JSON.stringify(book));
+  scheduleStudentDataPush();
 }
 
 export function loadMistakeBook(): MistakeBook {

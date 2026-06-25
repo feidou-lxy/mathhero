@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { GrowthSync } from "@/app/_components/growth/GrowthSync";
+import { StudentDataSync } from "@/app/_components/progress/StudentDataSync";
 import { ServiceWorkerRegister } from "@/app/_components/pwa/ServiceWorkerRegister";
 import { appleStartupImages } from "@/lib/pwa/appleStartupImages";
 import "./globals.css";
@@ -72,7 +72,7 @@ export default function RootLayout({
     >
       <body className="min-h-full flex flex-col">
         <div className="app-shell">{children}</div>
-        <GrowthSync />
+        <StudentDataSync />
         <ServiceWorkerRegister />
       </body>
     </html>

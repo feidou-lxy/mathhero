@@ -79,6 +79,7 @@ function PracticePageInner() {
             pathWeek={session.pathWeek}
             pathWeekConfig={session.pathWeekConfig}
             pathWeekPassed={session.pathWeekPassed}
+            pathWeekDayResult={session.pathWeekDayResult}
             pathProgress={session.pathProgress}
             parentReport={session.parentReport}
             onRestart={session.handleRestart}

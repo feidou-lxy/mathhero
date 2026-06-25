@@ -250,6 +250,7 @@ export function buildGrade2StructureSection(plan: GenerationPlan): string {
 【学习路径 · 第 ${plan.pathWeekConfig.weekNumber} 周 / 共 12 周】
 主题：${plan.pathWeekConfig.title}
 本周目标：${plan.pathWeekConfig.goal}
+通关要求：每周练 5 天，每天完成 1 次练习（正确率 ≥ 60% 计 1 天）
 重点知识点：${plan.pathWeekConfig.focusCategories.map((c) => GRADE2_TOPIC_LABELS[c]).join("、")}`
     : "";
 

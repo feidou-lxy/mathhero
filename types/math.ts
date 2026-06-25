@@ -347,6 +347,8 @@ export type LearningPathWeekRecord = {
   status: LearningPathWeekStatus;
   completedAt?: string;
   bestAccuracy?: number;
+  /** 本周有效打卡日期 YYYY-MM-DD（正确率 ≥ 60%，每天最多 1 次） */
+  practiceDates?: string[];
 };
 
 /** 学习路径 · 学生进度 */
