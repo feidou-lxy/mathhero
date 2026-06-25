@@ -6,6 +6,7 @@ import { GROWTH_UPDATED_EVENT } from "@/lib/progress/growthEvents";
 import { loadLevelProgress } from "@/lib/progress/growthStorage";
 import { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 import {
+  formatRedemptionTime,
   formatYuan,
   parseYuanInput,
   starsToYuan,
@@ -28,6 +29,7 @@ export function StarBankPageContent() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [showAllRedemptions, setShowAllRedemptions] = useState(false);
 
   const refresh = () => {
     setLevelProgress(loadLevelProgress());
@@ -47,6 +49,12 @@ export function StarBankPageContent() {
   const parsedYuan = useMemo(() => parseYuanInput(yuanInput), [yuanInput]);
   const starsNeeded = parsedYuan ? yuanToStars(parsedYuan) : 0;
   const maxYuan = levelProgress ? starsToYuan(levelProgress.totalStars) : 0;
+  const visibleRedemptions = useMemo(() => {
+    if (!account) return [];
+    if (showAllRedemptions) return account.redemptions;
+    return account.redemptions.slice(0, 5);
+  }, [account, showAllRedemptions]);
+  const hasMoreRedemptions = (account?.redemptions.length ?? 0) > 5;
 
   const handleRedeem = () => {
     setError(null);
@@ -112,6 +120,12 @@ export function StarBankPageContent() {
             最多可兑换 {formatYuan(maxYuan)} 元 · Lv.{levelProgress.level}{" "}
             {levelProgress.title}
           </p>
+          {account.totalRedeemedYuan > 0 && (
+            <p className="mt-1 text-xs text-amber-600/80 dark:text-amber-400/80">
+              已累计兑换 {formatYuan(account.totalRedeemedYuan)} 元（
+              {account.totalRedeemedStars} 颗星星）
+            </p>
+          )}
         </section>
 
         <section className="mb-6 rounded-2xl border border-black/[.08] bg-white px-5 py-5 dark:border-white/[.145] dark:bg-zinc-900">
@@ -171,34 +185,72 @@ export function StarBankPageContent() {
           )}
         </section>
 
-        {account.redemptions.length > 0 && (
-          <section className="rounded-2xl border border-black/[.08] bg-white px-5 py-5 dark:border-white/[.145] dark:bg-zinc-900">
-            <div className="mb-4 flex items-center justify-between">
+        <section className="rounded-2xl border border-black/[.08] bg-white px-5 py-5 dark:border-white/[.145] dark:bg-zinc-900">
+          <div className="mb-4 flex items-start justify-between gap-3">
+            <div>
               <h2 className="text-base font-semibold text-black dark:text-zinc-50">
                 兑换记录
               </h2>
-              <span className="text-xs text-zinc-500 dark:text-zinc-400">
-                累计 {formatYuan(account.totalRedeemedYuan)} 元
-              </span>
+              {account.redemptions.length > 0 ? (
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  共 {account.redemptions.length} 笔 · 累计{" "}
+                  {formatYuan(account.totalRedeemedYuan)} 元 ·{" "}
+                  {account.totalRedeemedStars} 颗星星
+                </p>
+              ) : (
+                <p className="mt-1 text-xs text-zinc-500 dark:text-zinc-400">
+                  还没有兑换记录
+                </p>
+              )}
             </div>
-            <ul className="space-y-3">
-              {account.redemptions.slice(0, 8).map((item) => (
-                <li
-                  key={item.id}
-                  className="flex items-center justify-between rounded-xl bg-zinc-50 px-4 py-3 text-sm dark:bg-zinc-800/60"
+          </div>
+
+          {account.redemptions.length === 0 ? (
+            <div className="rounded-xl border border-dashed border-zinc-200 px-4 py-8 text-center dark:border-zinc-700">
+              <p className="text-sm text-zinc-500 dark:text-zinc-400">
+                完成练习赚取星星后，可以在这里兑换奖励
+              </p>
+            </div>
+          ) : (
+            <>
+              <ul className="space-y-2">
+                {visibleRedemptions.map((item) => (
+                  <li
+                    key={item.id}
+                    className="flex items-center justify-between gap-3 rounded-xl bg-zinc-50 px-4 py-3 dark:bg-zinc-800/60"
+                  >
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-black dark:text-zinc-50">
+                        兑换 {formatYuan(item.yuan)} 元
+                      </p>
+                      <p className="mt-0.5 text-xs text-zinc-500 dark:text-zinc-400">
+                        消耗 {item.starsSpent} 颗星星
+                      </p>
+                    </div>
+                    <time
+                      dateTime={item.createdAt}
+                      className="shrink-0 text-xs text-zinc-400 dark:text-zinc-500"
+                    >
+                      {formatRedemptionTime(item.createdAt)}
+                    </time>
+                  </li>
+                ))}
+              </ul>
+
+              {hasMoreRedemptions && (
+                <button
+                  type="button"
+                  onClick={() => setShowAllRedemptions((prev) => !prev)}
+                  className="mt-3 w-full rounded-xl py-2 text-sm font-medium text-zinc-600 transition-colors hover:bg-zinc-50 dark:text-zinc-400 dark:hover:bg-zinc-800/60"
                 >
-                  <span className="font-medium text-black dark:text-zinc-50">
-                    {formatYuan(item.yuan)} 元
-                  </span>
-                  <span className="text-zinc-500 dark:text-zinc-400">
-                    -{item.starsSpent} ⭐ ·{" "}
-                    {new Date(item.createdAt).toLocaleDateString("zh-CN")}
-                  </span>
-                </li>
-              ))}
-            </ul>
-          </section>
-        )}
+                  {showAllRedemptions
+                    ? "收起记录"
+                    : `查看全部 ${account.redemptions.length} 笔记录`}
+                </button>
+              )}
+            </>
+          )}
+        </section>
       </main>
     </div>
   );

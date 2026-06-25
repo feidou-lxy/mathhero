@@ -18,6 +18,19 @@ export function formatYuan(yuan: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : rounded.toFixed(1);
 }
 
+export function formatRedemptionTime(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return iso;
+
+  return date.toLocaleString("zh-CN", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    hour12: false,
+  });
+}
+
 export function parseYuanInput(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
