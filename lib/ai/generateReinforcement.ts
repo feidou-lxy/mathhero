@@ -5,7 +5,9 @@ import {
   buildReinforcementUserPrompt,
 } from "@/lib/ai/reinforcementPrompts";
 import { parseRawAIQuestionResponse } from "@/lib/ai/validate";
+import { validateLogicReasoningQuestion } from "@/lib/ai/logicQuestionValidator";
 import type { Question } from "@/lib/types/practice";
+import { normalizeQuestion } from "@/lib/practice/questionPresentation";
 import {
   REINFORCEMENT_COUNT,
   type ReinforcementSet,
@@ -75,19 +77,32 @@ export async function generateReinforcementQuestions(
         continue;
       }
 
-      const mapped: Question[] = raw.questions.map((q, index) => ({
-        id: original.id * 100 + index + 1,
-        type: q.type,
-        category: q.category,
-        prompt: q.prompt.trim(),
-        answer: q.answer,
-        ...(q.unit ? { unit: q.unit } : {}),
-        ...(q.hint ? { hint: q.hint } : {}),
-      }));
+      const mapped: Question[] = raw.questions.map((q, index) =>
+        normalizeQuestion({
+          id: original.id * 100 + index + 1,
+          type: q.type,
+          category: q.category,
+          prompt: q.prompt.trim(),
+          answer: q.answer,
+          ...(q.unit ? { unit: q.unit } : {}),
+          ...(q.hint ? { hint: q.hint } : {}),
+          ...(q.options ? { options: q.options } : {}),
+        }),
+      );
 
       const validationError = validateReinforcementQuestions(original, mapped);
       if (validationError) {
         lastError = validationError;
+        continue;
+      }
+
+      let logicValidationError: string | null = null;
+      for (const question of mapped) {
+        logicValidationError = validateLogicReasoningQuestion(question);
+        if (logicValidationError) break;
+      }
+      if (logicValidationError) {
+        lastError = logicValidationError;
         continue;
       }
 

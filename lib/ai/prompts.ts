@@ -14,16 +14,35 @@ import {
   GRADE2_FIXED_ADVANCED_COUNT,
   GRADE2_FIXED_BASIC_COUNT,
 } from "@/lib/curriculum/grade2";
+import {
+  LOGIC_QUESTION_BAD_EXAMPLE,
+  LOGIC_QUESTION_GOOD_EXAMPLE,
+  LOGIC_QUESTION_RULES,
+} from "@/lib/ai/logicQuestionRules";
 import type { PracticeLevel } from "@/lib/types/practice";
 import type { StudentProfile } from "@/lib/types/profile";
 
 const QUESTION_ITEM_SCHEMA = `{
       "category": ${GRADE2_CATEGORY_JSON},
       "prompt": "题干（清晰、适合二年级）",
-      "answer": 整数答案,
-      "unit": "可选，如 元、个、分钟",
+      "answer": "数值题填整数；选择题填 options 中正确项的下标（从 0 开始）",
+      "options": "logic_reasoning、shape_pattern 必填，2-4 个选项字符串数组",
+      "unit": "可选，如 元、个、分钟（不要用人名充当 unit）",
       "hint": "可选，拓展题建议提供"
     }`;
+
+const CHOICE_QUESTION_RULES = `
+【选择题格式 — logic_reasoning、shape_pattern 必须遵守】
+1. 必须提供 options 数组（2-4 个选项，每项为简短文字，如人名或图形名）
+2. answer 为正确选项在 options 中的下标（从 0 开始）
+3. 题干只写题目，不要写 (1=甲 2=乙) 这类编号
+4. 不要用 unit 字段表示人名、图形名
+${LOGIC_QUESTION_RULES}
+
+【逻辑题示例】
+${LOGIC_QUESTION_GOOD_EXAMPLE}
+
+${LOGIC_QUESTION_BAD_EXAMPLE}`;
 
 function buildTransitionPrompt(plan: GenerationPlan, profile?: StudentProfile): string {
   return `你是一位小学数学老师，学生即将从一年级升入二年级。
@@ -73,6 +92,7 @@ ${buildGrade2StructureSection(plan)}
 2. 必须具备思维性：找规律、推理、图形规律、多步思考或巧算
 3. 严禁超出小学二年级认知：不用分数/小数/方程/超纲符号，数字 ≤100
 4. 答案必须是整数；建议写 hint 引导思考，不要直接给解题步骤
+${CHOICE_QUESTION_RULES}
 
 【输出格式 — 必须严格遵守】
 只输出一个 JSON 对象，不要 markdown 代码块，不要任何解释文字。

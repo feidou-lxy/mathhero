@@ -24,6 +24,8 @@ import {
   type RawAIQuestionItem,
   type RawAIQuestionResponse,
 } from "@/lib/types/practice";
+import { validateLogicReasoningQuestion } from "@/lib/ai/logicQuestionValidator";
+import { normalizeQuestion } from "@/lib/practice/questionPresentation";
 
 const QUESTION_TYPES = new Set<QuestionType>(["basic", "extension"]);
 const QUESTION_LEVELS = new Set<QuestionLevel>(["transition", "grade2"]);
@@ -37,6 +39,21 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null && !Array.isArray(value);
 }
 
+function isValidOptions(value: unknown): boolean {
+  return (
+    value === undefined ||
+    (Array.isArray(value) &&
+      value.length >= 2 &&
+      value.length <= 6 &&
+      value.every((option) => typeof option === "string" && option.trim().length > 0))
+  );
+}
+
+function isValidChoiceAnswer(answer: number, options?: string[]): boolean {
+  if (!options || options.length < 2) return true;
+  return Number.isInteger(answer) && answer >= 0 && answer < options.length;
+}
+
 function isRawQuestionItem(
   value: unknown,
   expectedType: QuestionType,
@@ -44,6 +61,7 @@ function isRawQuestionItem(
   if (!isRecord(value)) return false;
 
   const { category, prompt, answer, unit, hint, level } = value;
+  const options = Array.isArray(value.options) ? value.options : undefined;
 
   if (typeof category !== "string" || !QUESTION_CATEGORIES.has(category as QuestionCategory)) {
     return false;
@@ -63,6 +81,8 @@ function isRawQuestionItem(
     typeof answer === "number" &&
     Number.isFinite(answer) &&
     Number.isInteger(answer) &&
+    isValidOptions(options) &&
+    isValidChoiceAnswer(answer, options) &&
     (unit === undefined || typeof unit === "string") &&
     (hint === undefined || typeof hint === "string") &&
     (level === undefined ||
@@ -76,6 +96,7 @@ function isRawQuestion(value: unknown, level: PracticeLevel): value is RawAIQues
 
   const { type, category, prompt, answer, unit, hint } = value;
   const questionLevel = value.level;
+  const options = Array.isArray(value.options) ? value.options : undefined;
 
   if (
     level === "transition" &&
@@ -95,6 +116,8 @@ function isRawQuestion(value: unknown, level: PracticeLevel): value is RawAIQues
     typeof answer === "number" &&
     Number.isFinite(answer) &&
     Number.isInteger(answer) &&
+    isValidOptions(options) &&
+    isValidChoiceAnswer(answer, options) &&
     (unit === undefined || typeof unit === "string") &&
     (hint === undefined || typeof hint === "string") &&
     (questionLevel === undefined ||
@@ -285,6 +308,24 @@ export function validateQuestionMix(
         return "Transition basic questions should be addition or subtraction";
       }
     }
+
+    if (question.category === "logic_reasoning") {
+      const normalized = normalizeQuestion({
+        id: 0,
+        type: question.type,
+        category: question.category,
+        prompt: question.prompt,
+        answer: question.answer,
+        ...(question.level ? { level: question.level } : {}),
+        ...(question.unit ? { unit: question.unit } : {}),
+        ...(question.hint ? { hint: question.hint } : {}),
+        ...(question.options ? { options: question.options } : {}),
+      });
+      const logicError = validateLogicReasoningQuestion(normalized);
+      if (logicError) {
+        return logicError;
+      }
+    }
   }
 
   return null;
@@ -302,15 +343,18 @@ export function toPracticeSet(
     level,
     source,
     generatedAt: new Date().toISOString(),
-    questions: raw.questions.map((question, index) => ({
-      id: index + 1,
-      type: question.type,
-      category: question.category,
-      prompt: question.prompt.trim(),
-      answer: question.answer,
-      ...(question.level ? { level: question.level } : {}),
-      ...(question.unit ? { unit: question.unit } : {}),
-      ...(question.hint ? { hint: question.hint } : {}),
-    })),
+    questions: raw.questions.map((question, index) =>
+      normalizeQuestion({
+        id: index + 1,
+        type: question.type,
+        category: question.category,
+        prompt: question.prompt.trim(),
+        answer: question.answer,
+        ...(question.level ? { level: question.level } : {}),
+        ...(question.unit ? { unit: question.unit } : {}),
+        ...(question.hint ? { hint: question.hint } : {}),
+        ...(question.options ? { options: question.options } : {}),
+      }),
+    ),
   };
 }

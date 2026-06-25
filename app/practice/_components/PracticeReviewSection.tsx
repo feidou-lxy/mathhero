@@ -4,6 +4,7 @@ import {
   TEACHER_NAME,
 } from "@/lib/ai/teacherCharacter";
 import { PracticeCelebrationHero } from "@/app/practice/_components/PracticeCelebrationHero";
+import { formatUserAnswerDisplay } from "@/lib/practice/questionPresentation";
 import type { SessionStarBreakdown } from "@/lib/types/growth";
 import type { DailyTaskProgress } from "@/lib/types/dailyTasks";
 import type {
@@ -262,8 +263,7 @@ export function PracticeReviewSection({
                 {q.prompt}
               </p>
               <p className="mt-2 text-sm text-zinc-500 dark:text-zinc-400">
-                你的答案：{answers[q.id]}
-                {q.unit ? ` ${q.unit}` : ""}
+                你的答案：{formatUserAnswerDisplay(q, answers[q.id] ?? "")}
               </p>
               {result?.message && (
                 <p

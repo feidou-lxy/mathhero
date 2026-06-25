@@ -5,6 +5,7 @@ import {
   TEACHER_THINKING_MESSAGE,
 } from "@/lib/ai/teacherCharacter";
 import { getStarsForQuestion } from "@/lib/progress/growth";
+import { isChoiceQuestion } from "@/lib/practice/questionPresentation";
 import type {
   DialogueMessage,
   Question,
@@ -61,6 +62,8 @@ export function PracticeAnsweringCard({
   onAdvanceAfterReveal,
   onStartReinforcement,
 }: PracticeAnsweringCardProps) {
+  const choiceQuestion = isChoiceQuestion(displayQuestion);
+
   return (
     <div className="rounded-2xl border border-black/[.08] bg-white px-6 py-8 dark:border-white/[.145] dark:bg-zinc-900">
       <div className="mb-6 flex items-center justify-between">
@@ -85,33 +88,63 @@ export function PracticeAnsweringCard({
         {displayQuestion.prompt}
       </p>
 
-      <div className="mt-8 flex items-center justify-center gap-2">
-        <input
-          type="number"
-          autoFocus
-          value={currentAnswer}
-          disabled={
-            feedback?.isCorrect === true ||
-            (feedback?.answerRevealed === true && questionMode === "main")
-          }
-          onChange={(e) => onAnswerChange(e.target.value)}
-          onKeyDown={(e) => {
-            if (
-              e.key === "Enter" &&
-              !feedback?.isCorrect &&
-              !(feedback?.answerRevealed && questionMode === "main")
-            ) {
-              onSubmitAnswer();
+      {choiceQuestion ? (
+        <div className="mt-8 grid gap-3">
+          {displayQuestion.options!.map((option, index) => {
+            const selected = currentAnswer === String(index);
+            const disabled =
+              feedback?.isCorrect === true ||
+              (feedback?.answerRevealed === true && questionMode === "main");
+
+            return (
+              <button
+                key={`${displayQuestion.id}-${option}-${index}`}
+                type="button"
+                disabled={disabled}
+                onClick={() => onAnswerChange(String(index))}
+                className={`rounded-xl border px-4 py-4 text-left text-lg font-medium transition-colors ${
+                  selected
+                    ? "border-foreground bg-foreground text-background"
+                    : "border-black/[.08] bg-zinc-50 text-black hover:bg-zinc-100 disabled:opacity-60 dark:border-white/[.145] dark:bg-zinc-800 dark:text-zinc-50 dark:hover:bg-zinc-700"
+                }`}
+              >
+                <span className="mr-3 inline-flex h-7 w-7 items-center justify-center rounded-full border text-sm">
+                  {String.fromCharCode(65 + index)}
+                </span>
+                {option}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="mt-8 flex items-center justify-center gap-2">
+          <input
+            type="number"
+            autoFocus
+            value={currentAnswer}
+            disabled={
+              feedback?.isCorrect === true ||
+              (feedback?.answerRevealed === true && questionMode === "main")
             }
-          }}
-          className="w-32 rounded-xl border border-black/[.08] bg-zinc-50 px-4 py-3 text-center text-2xl disabled:opacity-60 dark:border-white/[.145] dark:bg-zinc-800"
-        />
-        {displayQuestion.unit && (
-          <span className="text-lg text-zinc-500 dark:text-zinc-400">
-            {displayQuestion.unit}
-          </span>
-        )}
-      </div>
+            onChange={(e) => onAnswerChange(e.target.value)}
+            onKeyDown={(e) => {
+              if (
+                e.key === "Enter" &&
+                !feedback?.isCorrect &&
+                !(feedback?.answerRevealed && questionMode === "main")
+              ) {
+                onSubmitAnswer();
+              }
+            }}
+            className="w-32 rounded-xl border border-black/[.08] bg-zinc-50 px-4 py-3 text-center text-2xl disabled:opacity-60 dark:border-white/[.145] dark:bg-zinc-800"
+          />
+          {displayQuestion.unit && (
+            <span className="text-lg text-zinc-500 dark:text-zinc-400">
+              {displayQuestion.unit}
+            </span>
+          )}
+        </div>
+      )}
 
       {currentDialogue.length > 0 && (
         <div className="mt-6 max-h-64 space-y-3 overflow-y-auto rounded-xl border border-black/[.08] bg-zinc-50 px-4 py-4 dark:border-white/[.145] dark:bg-zinc-800/50">

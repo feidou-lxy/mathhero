@@ -38,11 +38,13 @@ export type Question = {
   category: QuestionCategory;
   /** 题干 */
   prompt: string;
-  /** 正确答案（整数） */
+  /** 正确答案：数值题填数字；选择题填 options 下标（从 0 开始） */
   answer: number;
   level?: QuestionLevel;
   unit?: string;
   hint?: string;
+  /** 选择题选项（logic_reasoning、shape_pattern 等） */
+  options?: string[];
 };
 
 /** AI 返回的原始题目（无 id） */
@@ -54,6 +56,7 @@ export type RawAIQuestion = {
   level?: QuestionLevel;
   unit?: string;
   hint?: string;
+  options?: string[];
 };
 
 /** AI 返回的分组题目项（basic / advanced 数组内，无 type） */
@@ -64,6 +67,7 @@ export type RawAIQuestionItem = {
   level?: QuestionLevel;
   unit?: string;
   hint?: string;
+  options?: string[];
 };
 
 /** DeepSeek 结构化输出：5 基础 + 2 拓展 */
@@ -431,6 +435,11 @@ export function toCorrectAnswer(question: Question): {
 
 /** 判断学生字符串答案是否与题目正确 */
 export function isAnswerCorrect(question: Question, userAnswer: string): boolean {
+  if (Array.isArray(question.options) && question.options.length >= 2) {
+    const selected = Number(userAnswer);
+    return Number.isInteger(selected) && selected === question.answer;
+  }
+
   const parsed = Number(userAnswer);
   return Number.isFinite(parsed) && parsed === question.answer;
 }

@@ -6,10 +6,14 @@ import {
 } from "@/lib/ai/tutorPrompts";
 import { isExtensionQuestion } from "@/lib/ai/tutorTeachingStyle";
 import {
+  formatQuestionAnswer,
+} from "@/lib/practice/questionPresentation";
+import {
   MAX_HINT_ROUNDS,
   type TutorFeedbackRequest,
   type TutorFeedbackResponse,
 } from "@/lib/types/tutor";
+import { isAnswerCorrect } from "@/types/math";
 
 type ParsedTutorContent = {
   message: string;
@@ -93,7 +97,7 @@ function buildMockFeedback(
   isCorrect: boolean,
 ): TutorFeedbackResponse {
   const { question, attemptNumber } = req;
-  const unit = question.unit ? ` ${question.unit}` : "";
+  const answerText = formatQuestionAnswer(question);
   const isExtension = isExtensionQuestion(question);
 
   if (isCorrect) {
@@ -126,7 +130,7 @@ function buildMockFeedback(
       return {
         isCorrect: false,
         answerRevealed: true,
-        message: `你已经很努力了！${TEACHER_NAME}来帮你～答案是 ${question.answer}${unit}。就像把东西平均分给几个小朋友：一共几个，分给几人，每人几个——按这个方法算，就是 ${question.answer}${unit}。下次你一定可以的！💪`,
+        message: `你已经很努力了！${TEACHER_NAME}来帮你～答案是 ${answerText}。就像把东西平均分给几个小朋友：一共几个，分给几人，每人几个——按这个方法算，就是 ${answerText}。下次你一定可以的！💪`,
       };
     }
     if (
@@ -137,13 +141,13 @@ function buildMockFeedback(
       return {
         isCorrect: false,
         answerRevealed: true,
-        message: `你已经很努力了！${TEACHER_NAME}来帮你～答案是 ${question.answer}${unit}。第一步先找题目里的数，第二步想先算什么，第三步再算下一步——慢慢按步骤来，下次一定能做对！💪`,
+        message: `你已经很努力了！${TEACHER_NAME}来帮你～答案是 ${answerText}。第一步先找题目里的数，第二步想先算什么，第三步再算下一步——慢慢按步骤来，下次一定能做对！💪`,
       };
     }
     return {
       isCorrect: false,
       answerRevealed: true,
-      message: `你已经很努力了，${TEACHER_NAME}来帮你！答案是 ${question.answer}${unit}。把题目里的数想清楚，一步一步算，下次你一定可以的！💪`,
+      message: `你已经很努力了，${TEACHER_NAME}来帮你！答案是 ${answerText}。把题目里的数想清楚，一步一步算，下次你一定可以的！💪`,
     };
   }
 
@@ -164,8 +168,7 @@ function buildMockFeedback(
 export async function getTutorFeedback(
   req: TutorFeedbackRequest,
 ): Promise<TutorFeedbackResponse> {
-  const userNum = Number(req.userAnswer);
-  const isCorrect = userNum === req.question.answer;
+  const isCorrect = isAnswerCorrect(req.question, req.userAnswer);
   const isExtension = isExtensionQuestion(req.question);
 
   if (isMockApiKey(process.env.DEEPSEEK_API_KEY)) {

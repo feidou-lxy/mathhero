@@ -86,7 +86,7 @@ export async function generateAIQuestions(
 
   let lastError = "Unknown AI generation error";
 
-  for (let attempt = 0; attempt < 2; attempt += 1) {
+  for (let attempt = 0; attempt < 3; attempt += 1) {
     try {
       const content = await callAiChat(messages);
       const raw = parseRawAIQuestionResponse(content, level);

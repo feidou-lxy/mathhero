@@ -2,6 +2,10 @@ import { MAX_HINT_ROUNDS } from "@/lib/types/tutor";
 import type { TutorFeedbackRequest } from "@/lib/types/tutor";
 import type { Question } from "@/types/math";
 import {
+  formatQuestionAnswer,
+  isChoiceQuestion,
+} from "@/lib/practice/questionPresentation";
+import {
   buildCategoryTeachingRules,
   buildCorrectExplanationGuide,
   buildExtensionHintOnlyRule,
@@ -39,13 +43,16 @@ export function buildTutorUserPrompt(
   isCorrect: boolean,
 ): string {
   const { question, userAnswer, attemptNumber, previousHints, dialogueHistory } = req;
-  const unitSuffix = question.unit ? question.unit : "";
+  const answerText = formatQuestionAnswer(question);
   const categoryRules = buildCategoryTeachingRules(question);
 
   const context = [
     categoryRules,
     `题目：${question.prompt}`,
-    `正确答案（仅供你参考，不要轻易透露）：${question.answer}${unitSuffix}`,
+    isChoiceQuestion(question)
+      ? `选项：${question.options!.map((option, index) => `${String.fromCharCode(65 + index)}. ${option}`).join("；")}`
+      : null,
+    `正确答案（仅供你参考，不要轻易透露）：${answerText}`,
     `学生答案：${userAnswer}`,
     `第 ${attemptNumber} 次作答`,
     previousHints?.length
@@ -67,5 +74,5 @@ ${buildCorrectExplanationGuide(question)}`;
   return `${context}
 
 ${buildWrongHintGuide(question, attemptNumber, MAX_HINT_ROUNDS)}
-记住：不要透露正确答案 ${question.answer}。`;
+记住：不要透露正确答案 ${answerText}。`;
 }

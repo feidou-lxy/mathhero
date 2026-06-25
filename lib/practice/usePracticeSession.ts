@@ -65,6 +65,7 @@ import {
   getProgressLabel,
   getProgressPercent,
 } from "@/app/practice/labels";
+import { normalizeQuestion, normalizeQuestions } from "@/lib/practice/questionPresentation";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -190,7 +191,10 @@ export function usePracticeSession() {
           focusSkill: activeFocusSkill,
         });
         setStudentProfile(profile);
-        setPracticeSet(loaded);
+        setPracticeSet({
+          ...loaded,
+          questions: normalizeQuestions(loaded.questions),
+        });
         sessionStartedAtRef.current = Date.now();
       } catch (err) {
         setPracticeSet(null);
@@ -209,10 +213,13 @@ export function usePracticeSession() {
   const mainQuestions = practiceSet?.questions ?? [];
   const total = mainQuestions.length;
   const mainQuestion = mainQuestions[currentIndex];
-  const displayQuestion =
-    questionMode === "main"
-      ? mainQuestion
-      : reinforcementQueue[reinforcementIndex];
+  const displayQuestion = useMemo(() => {
+    const question =
+      questionMode === "main"
+        ? mainQuestion
+        : reinforcementQueue[reinforcementIndex];
+    return question ? normalizeQuestion(question) : undefined;
+  }, [questionMode, mainQuestion, reinforcementQueue, reinforcementIndex]);
   const currentAnswer = displayQuestion
     ? (answers[displayQuestion.id] ?? "")
     : "";
@@ -399,7 +406,7 @@ export function usePracticeSession() {
 
     try {
       const questions = await loadReinforcementQuestions(mainQuestion);
-      setReinforcementQueue(questions);
+      setReinforcementQueue(normalizeQuestions(questions));
       setReinforcementIndex(0);
       setQuestionMode("reinforcement");
       setFeedback(null);

@@ -103,13 +103,13 @@ function skillDifficultyHint(
       if (plan.balance?.advancedTier === "easy") return `${tag}：简单 +1/+2 等差规律${focusNote}`;
       return `${tag}：3-5 项数列找下一项${focusNote}`;
     case "logic_reasoning":
-      if (plan.balance?.advancedTier === "hard") return `${tag}：2-3 个条件推理${focusNote}`;
-      if (plan.balance?.advancedTier === "easy") return `${tag}：单条件排序或排除${focusNote}`;
-      return `${tag}：简单逻辑，答案为整数${focusNote}`;
+      if (plan.balance?.advancedTier === "hard") return `${tag}：2-3 个条件推理，必须能推出唯一答案${focusNote}`;
+      if (plan.balance?.advancedTier === "easy") return `${tag}：单条件排序或排除，必须能推出唯一答案${focusNote}`;
+      return `${tag}：简单逻辑，条件须严谨、答案唯一${focusNote}`;
     case "shape_pattern":
-      if (plan.balance?.advancedTier === "hard") return `${tag}：图形周期规律，项数可至 10${focusNote}`;
-      if (plan.balance?.advancedTier === "easy") return `${tag}：AB 交替或 AAB 简单规律${focusNote}`;
-      return `${tag}：图形排列找规律${focusNote}`;
+      if (plan.balance?.advancedTier === "hard") return `${tag}：图形周期规律，必须提供 options 选择题${focusNote}`;
+      if (plan.balance?.advancedTier === "easy") return `${tag}：AB 交替或 AAB 简单规律，必须提供 options 选择题${focusNote}`;
+      return `${tag}：图形排列找规律，必须提供 options 选择题${focusNote}`;
     case "multi_step_word":
       if (plan.balance?.advancedTier === "hard") return `${tag}：3 步应用题，情境略丰富${focusNote}`;
       if (plan.balance?.advancedTier === "easy") return `${tag}：暂不优先，若出现则 2 步、数字≤20${focusNote}`;

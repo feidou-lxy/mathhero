@@ -1,5 +1,7 @@
 import type { Question } from "@/lib/types/practice";
 import { GRADE2_CATEGORY_JSON } from "@/lib/curriculum/grade2";
+import { formatQuestionAnswer } from "@/lib/practice/questionPresentation";
+import { LOGIC_QUESTION_RULES } from "@/lib/ai/logicQuestionRules";
 
 export function buildReinforcementSystemPrompt(): string {
   return `你是一位小学二年级数学老师。请根据学生做错的题目，生成 2 道「同类型但更简单」的巩固练习题。
@@ -8,8 +10,10 @@ export function buildReinforcementSystemPrompt(): string {
 2. 数字比原题更小、更容易
 3. 加减法：50 以内；乘法：2/5 的口诀；除法：被除数≤20
 4. 应用题一步或简单两步，情境直观
-5. 答案必须是整数
-6. 只输出 JSON，不要 markdown
+5. logic_reasoning、shape_pattern 必须提供 options 数组，answer 为正确选项下标（从 0 开始）
+6. logic_reasoning 条件须严谨，能严格推出唯一答案
+${LOGIC_QUESTION_RULES}
+7. 只输出 JSON，不要 markdown
 
 JSON 格式：
 {
@@ -19,6 +23,7 @@ JSON 格式：
       "category": ${GRADE2_CATEGORY_JSON},
       "prompt": "题干",
       "answer": 整数,
+      "options": "logic_reasoning、shape_pattern 必填",
       "unit": "可选"
     }
   ]
@@ -30,7 +35,7 @@ export function buildReinforcementUserPrompt(question: Question): string {
 题目：${question.prompt}
 类型：${question.category}
 难度标签：${question.type}${question.level ? ` / ${question.level}` : ""}
-正确答案：${question.answer}${question.unit ?? ""}
+正确答案：${formatQuestionAnswer(question)}
 
 请生成 2 道同类型（${question.category}）但更简单的巩固题，帮助打好基础。`;
 }
@@ -160,15 +165,17 @@ export function buildMockReinforcement(question: Question): Question[] {
         id: baseId + 1,
         type: "extension",
         category: "logic_reasoning",
-        prompt: "小明比小红高，小红比小华高，三人中最矮的是谁？（1=小华 2=小红 3=小明）",
-        answer: 1,
+        prompt: "小明比小红高，小红比小华高，三人中最矮的是谁？",
+        options: ["小华", "小红", "小明"],
+        answer: 0,
       },
       {
         id: baseId + 2,
         type: "extension",
         category: "logic_reasoning",
-        prompt: "甲、乙、丙三人，甲不是最高，乙比丙矮，最高的是谁？（1=甲 2=乙 3=丙）",
-        answer: 3,
+        prompt: "甲、乙、丙三人，甲不是最高，乙比丙矮，最高的是谁？",
+        options: ["甲", "乙", "丙"],
+        answer: 2,
       },
     ],
     shape_pattern: [
@@ -176,15 +183,17 @@ export function buildMockReinforcement(question: Question): Question[] {
         id: baseId + 1,
         type: "extension",
         category: "shape_pattern",
-        prompt: "按 ○△○△… 排列，第 6 个图形是 ○ 还是 △？（1=○ 2=△）",
-        answer: 2,
+        prompt: "按 ○△○△… 排列，第 6 个图形是什么？",
+        options: ["○", "△"],
+        answer: 0,
       },
       {
         id: baseId + 2,
         type: "extension",
         category: "shape_pattern",
-        prompt: "按 □○□○… 排列，第 5 个图形是 □ 还是 ○？（1=□ 2=○）",
-        answer: 1,
+        prompt: "按 □○□○… 排列，第 5 个图形是什么？",
+        options: ["□", "○"],
+        answer: 0,
       },
     ],
     multi_step_word: [

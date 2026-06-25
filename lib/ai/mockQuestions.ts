@@ -3,6 +3,7 @@ import type {
   PracticeSet,
   RawAIQuestionResponse,
 } from "@/lib/types/practice";
+import { normalizeQuestion } from "@/lib/practice/questionPresentation";
 
 export function getTodayDateString(): string {
   const today = new Date();
@@ -108,12 +109,12 @@ function buildGrade2MockResponse(): RawAIQuestionResponse {
       },
       {
         type: "extension",
-        category: "multi_step_word",
+        category: "logic_reasoning",
         prompt:
-          "图书角有 3 排书架，每排 5 本书，又新来了 4 本书，现在一共有多少本书？",
-        answer: 19,
-        unit: "本",
-        hint: "先算 3 排共有多少本，再加上新来的",
+          "小明、小红和小刚三个人比身高。小明比小红高，小红比小刚高。请问谁最高？",
+        options: ["小明", "小红", "小刚"],
+        answer: 0,
+        hint: "把三个人的身高从高到低排一排",
       },
     ],
   };
@@ -198,15 +199,18 @@ export function buildMockPracticeSet(
     level,
     source: "mock",
     generatedAt: new Date().toISOString(),
-    questions: raw.questions.map((question, index) => ({
-      id: index + 1,
-      type: question.type,
-      category: question.category,
-      prompt: question.prompt,
-      answer: question.answer,
-      ...(question.level ? { level: question.level } : {}),
-      ...(question.unit ? { unit: question.unit } : {}),
-      ...(question.hint ? { hint: question.hint } : {}),
-    })),
+    questions: raw.questions.map((question, index) =>
+      normalizeQuestion({
+        id: index + 1,
+        type: question.type,
+        category: question.category,
+        prompt: question.prompt,
+        answer: question.answer,
+        ...(question.level ? { level: question.level } : {}),
+        ...(question.unit ? { unit: question.unit } : {}),
+        ...(question.hint ? { hint: question.hint } : {}),
+        ...(question.options ? { options: question.options } : {}),
+      }),
+    ),
   };
 }
