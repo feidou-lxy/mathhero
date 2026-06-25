@@ -5,6 +5,7 @@ import {
   TEACHER_THINKING_MESSAGE,
 } from "@/lib/ai/teacherCharacter";
 import { getStarsForQuestion } from "@/lib/progress/growth";
+import { CALC_TIMER_SECONDS } from "@/lib/practice/calcTimer";
 import { isChoiceQuestion } from "@/lib/practice/questionPresentation";
 import type {
   DialogueMessage,
@@ -29,6 +30,7 @@ type PracticeAnsweringCardProps = {
   reinforcementLoading: boolean;
   nextButtonLabel: string;
   isLastMainQuestion: boolean;
+  calcTimerSeconds: number | null;
   onAnswerChange: (value: string) => void;
   onSubmitAnswer: () => void;
   onSendChat: () => void;
@@ -54,6 +56,7 @@ export function PracticeAnsweringCard({
   reinforcementLoading,
   nextButtonLabel,
   isLastMainQuestion,
+  calcTimerSeconds,
   onAnswerChange,
   onSubmitAnswer,
   onSendChat,
@@ -66,15 +69,42 @@ export function PracticeAnsweringCard({
 
   return (
     <div className="rounded-2xl border border-black/[.08] bg-white px-6 py-8 dark:border-white/[.145] dark:bg-zinc-900">
-      <div className="mb-6 flex items-center justify-between">
+      <div className="mb-6 flex items-center justify-between gap-4">
         <span className="text-sm font-medium text-zinc-500 dark:text-zinc-400">
           {progressLabel}
         </span>
-        <div className="h-2 w-32 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
-          <div
-            className="h-full rounded-full bg-foreground transition-all"
-            style={{ width: `${progressPercent}%` }}
-          />
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-3">
+          {calcTimerSeconds !== null && (
+            <div className="flex min-w-0 max-w-40 flex-1 items-center gap-2">
+              <span
+                className={`shrink-0 text-sm font-semibold tabular-nums ${
+                  calcTimerSeconds <= 10
+                    ? "text-red-600 dark:text-red-400"
+                    : "text-zinc-600 dark:text-zinc-300"
+                }`}
+              >
+                {calcTimerSeconds}s
+              </span>
+              <div className="h-1.5 min-w-0 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ease-linear ${
+                    calcTimerSeconds <= 10
+                      ? "bg-red-500 dark:bg-red-400"
+                      : "bg-foreground"
+                  }`}
+                  style={{
+                    width: `${(calcTimerSeconds / CALC_TIMER_SECONDS) * 100}%`,
+                  }}
+                />
+              </div>
+            </div>
+          )}
+          <div className="h-2 w-24 shrink-0 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+            <div
+              className="h-full rounded-full bg-foreground transition-all"
+              style={{ width: `${progressPercent}%` }}
+            />
+          </div>
         </div>
       </div>
 

@@ -302,10 +302,37 @@ export const LEGACY_SKILL_MIGRATION: Record<string, ProfileSkill> = {
 };
 
 export function migrateLegacySkillStats(
-  skills: Record<string, { correct: number; total: number }>,
-): Partial<Record<ProfileSkill, { correct: number; total: number }>> {
-  const merged: Partial<Record<ProfileSkill, { correct: number; total: number }>> =
-    {};
+  skills: Record<
+    string,
+    {
+      correct: number;
+      total: number;
+      responseTimeMs?: number;
+      responseTimeCount?: number;
+    }
+  >,
+): Partial<
+  Record<
+    ProfileSkill,
+    {
+      correct: number;
+      total: number;
+      responseTimeMs?: number;
+      responseTimeCount?: number;
+    }
+  >
+> {
+  const merged: Partial<
+    Record<
+      ProfileSkill,
+      {
+        correct: number;
+        total: number;
+        responseTimeMs?: number;
+        responseTimeCount?: number;
+      }
+    >
+  > = {};
 
   for (const [key, stats] of Object.entries(skills)) {
     const target =
@@ -316,10 +343,19 @@ export function migrateLegacySkillStats(
 
     if (!target) continue;
 
-    const existing = merged[target] ?? { correct: 0, total: 0 };
+    const existing = merged[target] ?? {
+      correct: 0,
+      total: 0,
+      responseTimeMs: 0,
+      responseTimeCount: 0,
+    };
     merged[target] = {
       correct: existing.correct + stats.correct,
       total: existing.total + stats.total,
+      responseTimeMs:
+        (existing.responseTimeMs ?? 0) + (stats.responseTimeMs ?? 0),
+      responseTimeCount:
+        (existing.responseTimeCount ?? 0) + (stats.responseTimeCount ?? 0),
     };
   }
 

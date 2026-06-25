@@ -2,6 +2,10 @@ import {
   isBasicCategory,
   isExtensionCategory,
 } from "@/lib/curriculum/grade2";
+import {
+  getSpeedLabel,
+  isCalculationCategory,
+} from "@/lib/practice/calcTimer";
 import type {
   SkillGroupMastery,
   SkillMasteryItem,
@@ -55,6 +59,7 @@ export function computeWeaknessScore(
   accuracy: number,
   total: number,
   level: SkillMasteryItem["level"],
+  avgResponseSeconds?: number | null,
 ): number {
   if (total === 0) return 55;
 
@@ -62,6 +67,14 @@ export function computeWeaknessScore(
   if (level === "needs_improvement") score += 12;
   if (level === "proficient") score -= 15;
   if (total < 3) score += 5;
+
+  if (
+    typeof avgResponseSeconds === "number" &&
+    avgResponseSeconds > 0
+  ) {
+    if (avgResponseSeconds > 25) score += 10;
+    else if (avgResponseSeconds > 15) score += 4;
+  }
 
   return Math.max(0, Math.round(score));
 }
@@ -72,6 +85,15 @@ function buildSkillItem(
 ): SkillMasteryItem {
   const stats = profile.skills[skill];
   const practiced = stats.total > 0;
+  const avgResponseSeconds =
+    stats.responseTimeCount && stats.responseTimeCount > 0
+      ? Math.round(((stats.responseTimeMs ?? 0) / stats.responseTimeCount / 100)) /
+        10
+      : null;
+  const speedLabel =
+    avgResponseSeconds !== null && isCalculationCategory(skill)
+      ? getSpeedLabel(avgResponseSeconds)
+      : null;
 
   return {
     skill,
@@ -82,7 +104,14 @@ function buildSkillItem(
     correct: stats.correct,
     total: stats.total,
     practiced,
-    weaknessScore: computeWeaknessScore(stats.accuracy, stats.total, stats.level),
+    avgResponseSeconds,
+    speedLabel,
+    weaknessScore: computeWeaknessScore(
+      stats.accuracy,
+      stats.total,
+      stats.level,
+      isCalculationCategory(skill) ? avgResponseSeconds : null,
+    ),
   };
 }
 

@@ -12,6 +12,10 @@ export type SkillMasteryItem = {
   practiced: boolean;
   /** 越大越薄弱，用于排序 */
   weaknessScore: number;
+  /** 计算题平均答题秒数 */
+  avgResponseSeconds?: number | null;
+  /** 答题速度评价 */
+  speedLabel?: "很快" | "正常" | "偏慢" | null;
 };
 
 /** 能力分组（用于能力图） */

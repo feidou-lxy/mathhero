@@ -67,6 +67,11 @@ import {
   getProgressPercent,
 } from "@/app/practice/labels";
 import { normalizeQuestion, normalizeQuestions } from "@/lib/practice/questionPresentation";
+import {
+  CALC_TIMER_SECONDS,
+  isCalculationQuestion,
+} from "@/lib/practice/calcTimer";
+import { MAX_HINT_ROUNDS } from "@/lib/types/tutor";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
 
@@ -90,6 +95,13 @@ export function usePracticeSession() {
   const sessionStartedAtRef = useRef<number | null>(null);
   const starsAwardedRef = useRef<Set<number>>(new Set());
   const perfectBonusRef = useRef(false);
+  const questionStartAtRef = useRef<number>(Date.now());
+  const timerHandledQuestionRef = useRef<number | null>(null);
+  const questionMetricsRef = useRef<
+    Record<number, { responseTimeMs: number; timedOut?: boolean }>
+  >({});
+
+  const [calcTimerSeconds, setCalcTimerSeconds] = useState<number | null>(null);
 
   const [practiceSet, setPracticeSet] = useState<PracticeSet | null>(null);
   const [answers, setAnswers] = useState<Record<number, string>>({});
@@ -153,6 +165,9 @@ export function usePracticeSession() {
     perfectBonusRef.current = false;
     reportSavedRef.current = false;
     sessionStartedAtRef.current = null;
+    questionMetricsRef.current = {};
+    timerHandledQuestionRef.current = null;
+    setCalcTimerSeconds(null);
     setParentReport(null);
     setSessionQuestionStars(0);
     setSessionPerfectBonus(0);
@@ -236,6 +251,29 @@ export function usePracticeSession() {
   const inHintDialogue =
     !!feedback?.hintRound && !feedback.isCorrect && !feedback.answerRevealed;
 
+  const isCalcQuestion = displayQuestion
+    ? isCalculationQuestion(displayQuestion)
+    : false;
+  const calcTimerActive =
+    isCalcQuestion &&
+    phase === "answering" &&
+    !feedback &&
+    !tutorLoading &&
+    !chatLoading;
+
+  const recordQuestionMetrics = useCallback(
+    (questionId: number, timedOut = false) => {
+      const elapsed = Date.now() - questionStartAtRef.current;
+      questionMetricsRef.current[questionId] = {
+        responseTimeMs: timedOut
+          ? CALC_TIMER_SECONDS * 1000
+          : Math.min(elapsed, CALC_TIMER_SECONDS * 1000),
+        timedOut,
+      };
+    },
+    [],
+  );
+
   const appendDialogue = useCallback(
     (questionId: number, messages: DialogueMessage[]) => {
       setDialogues((prev) => ({
@@ -257,6 +295,7 @@ export function usePracticeSession() {
 
   const saveQuestionResult = useCallback(
     (question: Question, isCorrect: boolean) => {
+      const metrics = questionMetricsRef.current[question.id];
       const { result, profile } = persistQuestionResult({
         question,
         userAnswer: answers[question.id] ?? "",
@@ -264,6 +303,8 @@ export function usePracticeSession() {
         questionMode,
         feedbackMessage: feedback?.message ?? "",
         feedbackExplanation: feedback?.explanation,
+        responseTimeMs: metrics?.responseTimeMs,
+        timedOut: metrics?.timedOut,
       });
 
       setResults((prev) => ({ ...prev, [question.id]: result }));
@@ -271,6 +312,97 @@ export function usePracticeSession() {
     },
     [answers, feedback, questionMode],
   );
+
+  const handleTimerExpired = useCallback(() => {
+    if (!displayQuestion) return;
+    if (timerHandledQuestionRef.current === displayQuestion.id) return;
+    if (feedback || tutorLoading || chatLoading) return;
+
+    timerHandledQuestionRef.current = displayQuestion.id;
+    recordQuestionMetrics(displayQuestion.id, true);
+
+    const attemptNumber = (attemptCounts[displayQuestion.id] ?? 0) + 1;
+    const unitSuffix = displayQuestion.unit ?? "";
+
+    let timeoutFeedback: TutorFeedbackResponse;
+
+    if (questionMode === "reinforcement") {
+      timeoutFeedback = {
+        isCorrect: false,
+        message: "时间到！看看老师刚才说的答案，再试一次吧～",
+      };
+    } else if (attemptNumber < MAX_HINT_ROUNDS) {
+      timeoutFeedback = {
+        isCorrect: false,
+        message: "时间到！先想想哪里卡住了，看看老师的提示～",
+        hintRound: attemptNumber,
+        inviteDialogue: true,
+      };
+    } else {
+      timeoutFeedback = {
+        isCorrect: false,
+        message: `时间到！正确答案是 ${displayQuestion.answer}${unitSuffix}，我们记一下继续加油～`,
+        answerRevealed: true,
+      };
+    }
+
+    setFeedback(timeoutFeedback);
+    setAttemptCounts((prev) => ({
+      ...prev,
+      [displayQuestion.id]: attemptNumber,
+    }));
+    appendDialogue(displayQuestion.id, [
+      { role: "teacher", content: timeoutFeedback.message },
+    ]);
+    setHintHistory((prev) => ({
+      ...prev,
+      [displayQuestion.id]: [
+        ...(prev[displayQuestion.id] ?? []),
+        timeoutFeedback.message,
+      ],
+    }));
+    setCalcTimerSeconds(null);
+  }, [
+    appendDialogue,
+    attemptCounts,
+    chatLoading,
+    displayQuestion,
+    feedback,
+    questionMode,
+    recordQuestionMetrics,
+    tutorLoading,
+  ]);
+
+  useEffect(() => {
+    if (!calcTimerActive || !displayQuestion) {
+      setCalcTimerSeconds(null);
+      return;
+    }
+
+    timerHandledQuestionRef.current = null;
+    questionStartAtRef.current = Date.now();
+    setCalcTimerSeconds(CALC_TIMER_SECONDS);
+
+    const interval = window.setInterval(() => {
+      setCalcTimerSeconds((prev) => {
+        if (prev === null || prev <= 1) return 0;
+        return prev - 1;
+      });
+    }, 1000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    calcTimerActive,
+    displayQuestion?.id,
+    currentIndex,
+    reinforcementIndex,
+    questionMode,
+  ]);
+
+  useEffect(() => {
+    if (calcTimerSeconds !== 0) return;
+    handleTimerExpired();
+  }, [calcTimerSeconds, handleTimerExpired]);
 
   const handleAnswerChange = useCallback(
     (value: string) => {
@@ -336,6 +468,10 @@ export function usePracticeSession() {
     if (feedback?.answerRevealed && questionMode === "main") return;
 
     if (feedback?.answerRevealed && questionMode === "reinforcement") {
+      if (isCalculationQuestion(displayQuestion)) {
+        recordQuestionMetrics(displayQuestion.id, false);
+        setCalcTimerSeconds(null);
+      }
       const retryFeedback = gradeReinforcementRetry(
         displayQuestion,
         currentAnswer,
@@ -348,6 +484,10 @@ export function usePracticeSession() {
     }
 
     const attemptNumber = (attemptCounts[displayQuestion.id] ?? 0) + 1;
+    if (isCalculationQuestion(displayQuestion)) {
+      recordQuestionMetrics(displayQuestion.id, false);
+      setCalcTimerSeconds(null);
+    }
     setTutorLoading(true);
     setError(null);
 
@@ -398,6 +538,7 @@ export function usePracticeSession() {
     feedback,
     hintHistory,
     questionMode,
+    recordQuestionMetrics,
     tutorLoading,
   ]);
 
@@ -681,5 +822,6 @@ export function usePracticeSession() {
     pathWeekDayResult,
     pathProgress,
     parentReport,
+    calcTimerSeconds,
   };
 }

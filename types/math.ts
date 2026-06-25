@@ -161,6 +161,10 @@ export type QuestionAnswerResult = {
 export type AnswerRecordInput = {
   category: QuestionCategory;
   isCorrect: boolean;
+  /** 计算题答题耗时（毫秒） */
+  responseTimeMs?: number;
+  /** 是否超时未答 */
+  timedOut?: boolean;
 };
 
 /** @deprecated 使用 AnswerRecordInput */
@@ -232,6 +236,10 @@ export type SkillStats = {
   accuracy: number;
   level: SkillLevel;
   levelLabel: SkillLevelLabel;
+  /** 计算题累计答题耗时（毫秒） */
+  responseTimeMs?: number;
+  /** 计算题答题次数（含超时） */
+  responseTimeCount?: number;
 };
 
 /** 学生能力画像（长期累积） */

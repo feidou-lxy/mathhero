@@ -74,6 +74,12 @@ export function SkillAbilityChart({ items, groups }: SkillAbilityChartProps) {
               {item.practiced && (
                 <p className="mt-1 text-[11px] text-zinc-400 dark:text-zinc-500">
                   答对 {item.correct}/{item.total} 题
+                  {item.speedLabel && item.avgResponseSeconds != null && (
+                    <>
+                      {" · "}
+                      平均 {item.avgResponseSeconds}s · {item.speedLabel}
+                    </>
+                  )}
                 </p>
               )}
             </div>

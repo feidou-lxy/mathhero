@@ -66,6 +66,8 @@ export type PersistQuestionResultInput = {
   questionMode: QuestionMode;
   feedbackMessage: string;
   feedbackExplanation?: string;
+  responseTimeMs?: number;
+  timedOut?: boolean;
 };
 
 export type PersistQuestionResultOutput = {
@@ -92,6 +94,8 @@ export function persistQuestionResult(
   const profile = recordAndSaveAnswer({
     category: input.question.category,
     isCorrect: input.isCorrect,
+    responseTimeMs: input.responseTimeMs,
+    timedOut: input.timedOut,
   });
 
   void syncStudentProfile(profile);

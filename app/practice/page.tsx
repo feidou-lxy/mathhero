@@ -49,6 +49,7 @@ function PracticePageInner() {
             reinforcementLoading={session.reinforcementLoading}
             nextButtonLabel={session.nextButtonLabel}
             isLastMainQuestion={session.isLastMainQuestion}
+            calcTimerSeconds={session.calcTimerSeconds}
             onAnswerChange={session.handleAnswerChange}
             onSubmitAnswer={() => void session.handleSubmitAnswer()}
             onSendChat={() => void session.handleSendChat()}

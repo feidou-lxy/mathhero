@@ -36,6 +36,9 @@ function mergeSkillStats(a: SkillStats, b: SkillStats): SkillStats {
   const total = Math.max(a.total, b.total);
   const accuracy = total === 0 ? 0 : Math.round((correct / total) * 100);
   const level = judgeSkillLevel(correct, total);
+  const responseTimeMs = (a.responseTimeMs ?? 0) + (b.responseTimeMs ?? 0);
+  const responseTimeCount =
+    (a.responseTimeCount ?? 0) + (b.responseTimeCount ?? 0);
 
   return {
     correct,
@@ -43,6 +46,8 @@ function mergeSkillStats(a: SkillStats, b: SkillStats): SkillStats {
     accuracy,
     level,
     levelLabel: LEVEL_LABELS[level],
+    responseTimeMs,
+    responseTimeCount,
   };
 }
 

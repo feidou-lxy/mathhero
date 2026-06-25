@@ -1,4 +1,5 @@
 import { migrateLegacySkillStats } from "@/lib/curriculum/grade2";
+import { isCalculationCategory } from "@/lib/practice/calcTimer";
 import type { QuestionCategory } from "@/lib/types/practice";
 import {
   LEVEL_LABELS,
@@ -20,6 +21,8 @@ function emptySkillStats(): SkillStats {
     accuracy: 0,
     level: "average",
     levelLabel: LEVEL_LABELS.average,
+    responseTimeMs: 0,
+    responseTimeCount: 0,
   };
 }
 
@@ -52,7 +55,12 @@ export function judgeSkillLevel(correct: number, total: number): SkillLevel {
   return "needs_improvement";
 }
 
-function buildSkillStats(correct: number, total: number): SkillStats {
+function buildSkillStats(
+  correct: number,
+  total: number,
+  responseTimeMs = 0,
+  responseTimeCount = 0,
+): SkillStats {
   const accuracy = total === 0 ? 0 : Math.round((correct / total) * 100);
   const level = judgeSkillLevel(correct, total);
 
@@ -62,6 +70,8 @@ function buildSkillStats(correct: number, total: number): SkillStats {
     accuracy,
     level,
     levelLabel: LEVEL_LABELS[level],
+    responseTimeMs,
+    responseTimeCount,
   };
 }
 
@@ -74,12 +84,29 @@ export function recordProfileAnswer(
   const correct = current.correct + (input.isCorrect ? 1 : 0);
   const total = current.total + 1;
 
+  let responseTimeMs = current.responseTimeMs ?? 0;
+  let responseTimeCount = current.responseTimeCount ?? 0;
+
+  if (
+    isCalculationCategory(input.category) &&
+    typeof input.responseTimeMs === "number" &&
+    input.responseTimeMs >= 0
+  ) {
+    responseTimeCount += 1;
+    responseTimeMs += input.responseTimeMs;
+  }
+
   return {
     ...profile,
     updatedAt: new Date().toISOString(),
     skills: {
       ...profile.skills,
-      [skill]: buildSkillStats(correct, total),
+      [skill]: buildSkillStats(
+        correct,
+        total,
+        responseTimeMs,
+        responseTimeCount,
+      ),
     },
   };
 }
@@ -112,13 +139,25 @@ export function normalizeProfile(data: unknown): StudentProfile {
     return { ...base, studentId: record.studentId ?? base.studentId };
   }
 
-  const rawSkills: Record<string, { correct: number; total: number }> = {};
+  const rawSkills: Record<
+    string,
+    {
+      correct: number;
+      total: number;
+      responseTimeMs?: number;
+      responseTimeCount?: number;
+    }
+  > = {};
   for (const [key, value] of Object.entries(skills)) {
     if (!value || typeof value !== "object") continue;
     const stat = value as Partial<SkillStats>;
     rawSkills[key] = {
       correct: typeof stat.correct === "number" ? stat.correct : 0,
       total: typeof stat.total === "number" ? stat.total : 0,
+      responseTimeMs:
+        typeof stat.responseTimeMs === "number" ? stat.responseTimeMs : 0,
+      responseTimeCount:
+        typeof stat.responseTimeCount === "number" ? stat.responseTimeCount : 0,
     };
   }
 
@@ -127,7 +166,12 @@ export function normalizeProfile(data: unknown): StudentProfile {
   for (const skill of PROFILE_SKILLS) {
     const stats = migrated[skill];
     if (!stats) continue;
-    base.skills[skill] = buildSkillStats(stats.correct, stats.total);
+    base.skills[skill] = buildSkillStats(
+      stats.correct,
+      stats.total,
+      stats.responseTimeMs ?? 0,
+      stats.responseTimeCount ?? 0,
+    );
   }
 
   return {
