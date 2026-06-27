@@ -111,5 +111,11 @@ export async function generateAIQuestions(
     }
   }
 
-  throw new Error(lastError);
+  console.warn(
+    "[generateAIQuestions] AI generation failed, using mock fallback:",
+    lastError,
+  );
+  const mockSet = buildMockPracticeSet(date, level);
+  cache.set(cacheKey, mockSet);
+  return mockSet;
 }

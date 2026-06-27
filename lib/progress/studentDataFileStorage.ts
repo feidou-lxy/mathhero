@@ -2,11 +2,12 @@ import {
   createEmptyStudentDataBundle,
   normalizeStudentDataBundle,
 } from "@/lib/progress/studentDataMerge";
+import { getStudentDataFilePath } from "@/lib/progress/dataPaths";
 import type { StudentDataBundle } from "@/lib/types/studentData";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
-const DATA_PATH = path.join(process.cwd(), "data", "student-data.json");
+const DATA_PATH = getStudentDataFilePath();
 
 export async function loadStudentDataFromFile(): Promise<StudentDataBundle> {
   try {

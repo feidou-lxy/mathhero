@@ -1,31 +1,46 @@
+import { syncStudentDataWithServer } from "@/lib/progress/studentDataSync";
+
 let timer: ReturnType<typeof setTimeout> | null = null;
-let pushing = false;
+let syncing = false;
+let resyncRequested = false;
+
+async function runStudentDataSync(): Promise<void> {
+  if (syncing || typeof window === "undefined") return;
+
+  syncing = true;
+  try {
+    await syncStudentDataWithServer();
+  } finally {
+    syncing = false;
+    if (resyncRequested) {
+      resyncRequested = false;
+      void runStudentDataSync();
+    }
+  }
+}
 
 export function scheduleStudentDataPush(): void {
   if (typeof window === "undefined") return;
   if (timer) clearTimeout(timer);
   timer = setTimeout(() => {
     timer = null;
-    void flushStudentDataPush();
-  }, 1000);
+    void runStudentDataSync();
+  }, 800);
 }
 
-async function flushStudentDataPush(): Promise<void> {
-  if (pushing || typeof window === "undefined") return;
+/** 立即同步（页面重新可见、网络恢复时） */
+export function syncStudentDataNow(): void {
+  if (typeof window === "undefined") return;
 
-  pushing = true;
-  try {
-    const { loadLocalStudentDataBundle } = await import(
-      "@/lib/progress/studentDataClient"
-    );
-    const { pushStudentDataToServer } = await import(
-      "@/lib/progress/studentDataServerApi"
-    );
-
-    const local = loadLocalStudentDataBundle();
-    local.updatedAt = new Date().toISOString();
-    await pushStudentDataToServer(local);
-  } finally {
-    pushing = false;
+  if (syncing) {
+    resyncRequested = true;
+    return;
   }
+
+  if (timer) {
+    clearTimeout(timer);
+    timer = null;
+  }
+
+  void runStudentDataSync();
 }

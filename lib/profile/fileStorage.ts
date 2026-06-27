@@ -1,9 +1,10 @@
 import { createEmptyProfile, normalizeProfile } from "@/lib/profile/studentProfile";
+import { getStudentProfileFilePath } from "@/lib/progress/dataPaths";
 import type { StudentProfile } from "@/lib/types/profile";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
-const PROFILE_PATH = path.join(process.cwd(), "data", "student-profile.json");
+const PROFILE_PATH = getStudentProfileFilePath();
 
 export async function loadProfileFromFile(): Promise<StudentProfile> {
   try {

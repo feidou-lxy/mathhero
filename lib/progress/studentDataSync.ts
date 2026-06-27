@@ -68,17 +68,25 @@ export async function syncStudentDataWithServer(): Promise<StudentDataBundle> {
     : local;
 
   applyStudentDataBundleToLocal(merged);
-  const pushed = (await pushStudentDataToServer(merged)) ?? merged;
+  let pushed: StudentDataBundle | null = null;
+
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    pushed = await pushStudentDataToServer(merged);
+    if (pushed) break;
+    await new Promise((resolve) => setTimeout(resolve, 400 * (attempt + 1)));
+  }
+
+  const afterPush = pushed ?? merged;
 
   if (server) {
-    const reconciled = mergeStudentDataBundles(merged, pushed);
+    const reconciled = mergeStudentDataBundles(merged, afterPush);
     applyStudentDataBundleToLocal(reconciled);
     notifyAllUpdated();
     return normalizeStudentDataBundle(reconciled);
   }
 
   notifyAllUpdated();
-  return normalizeStudentDataBundle(merged);
+  return normalizeStudentDataBundle(afterPush);
 }
 
 /** @deprecated 使用 syncStudentDataWithServer */

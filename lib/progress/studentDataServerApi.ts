@@ -18,6 +18,7 @@ export async function pushStudentDataToServer(
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(bundle),
+      keepalive: true,
     });
     if (!response.ok) return null;
     return (await response.json()) as StudentDataBundle;

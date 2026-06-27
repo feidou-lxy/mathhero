@@ -60,7 +60,8 @@ function isRawQuestionItem(
 ): value is RawAIQuestionItem {
   if (!isRecord(value)) return false;
 
-  const { category, prompt, answer, unit, hint, level } = value;
+  const { category, prompt, unit, hint, level } = value;
+  const answer = coerceIntegerAnswer(value.answer);
   const options = Array.isArray(value.options) ? value.options : undefined;
 
   if (typeof category !== "string" || !QUESTION_CATEGORIES.has(category as QuestionCategory)) {
@@ -78,9 +79,7 @@ function isRawQuestionItem(
   return (
     typeof prompt === "string" &&
     prompt.trim().length > 0 &&
-    typeof answer === "number" &&
-    Number.isFinite(answer) &&
-    Number.isInteger(answer) &&
+    answer !== null &&
     isValidOptions(options) &&
     isValidChoiceAnswer(answer, options) &&
     (unit === undefined || typeof unit === "string") &&
@@ -94,7 +93,8 @@ function isRawQuestionItem(
 function isRawQuestion(value: unknown, level: PracticeLevel): value is RawAIQuestion {
   if (!isRecord(value)) return false;
 
-  const { type, category, prompt, answer, unit, hint } = value;
+  const { type, category, prompt, unit, hint } = value;
+  const answer = coerceIntegerAnswer(value.answer);
   const questionLevel = value.level;
   const options = Array.isArray(value.options) ? value.options : undefined;
 
@@ -113,9 +113,7 @@ function isRawQuestion(value: unknown, level: PracticeLevel): value is RawAIQues
     QUESTION_CATEGORIES.has(category as QuestionCategory) &&
     typeof prompt === "string" &&
     prompt.trim().length > 0 &&
-    typeof answer === "number" &&
-    Number.isFinite(answer) &&
-    Number.isInteger(answer) &&
+    answer !== null &&
     isValidOptions(options) &&
     isValidChoiceAnswer(answer, options) &&
     (unit === undefined || typeof unit === "string") &&
@@ -127,9 +125,78 @@ function isRawQuestion(value: unknown, level: PracticeLevel): value is RawAIQues
 }
 
 function extractJsonContent(content: string): string {
-  const trimmed = content.trim();
+  const trimmed = content.trim().replace(/^\uFEFF/, "");
   const fenceMatch = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/);
-  return fenceMatch ? fenceMatch[1].trim() : trimmed;
+  if (fenceMatch) return fenceMatch[1].trim();
+
+  if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+    return trimmed;
+  }
+
+  const objectMatch = trimmed.match(/\{[\s\S]*\}/);
+  return objectMatch ? objectMatch[0] : trimmed;
+}
+
+function coerceIntegerAnswer(value: unknown): number | null {
+  if (typeof value === "number" && Number.isFinite(value) && Number.isInteger(value)) {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (/^-?\d+$/.test(trimmed)) {
+      return Number(trimmed);
+    }
+  }
+
+  return null;
+}
+
+function normalizeRawQuestionItem(
+  value: unknown,
+  expectedType: QuestionType,
+): RawAIQuestionItem | null {
+  if (!isRecord(value) || !isRawQuestionItem(value, expectedType)) return null;
+
+  const answer = coerceIntegerAnswer(value.answer);
+  if (answer === null) return null;
+
+  return {
+    category: value.category as QuestionCategory,
+    prompt: (value.prompt as string).trim(),
+    answer,
+    ...(typeof value.unit === "string" ? { unit: value.unit } : {}),
+    ...(typeof value.hint === "string" ? { hint: value.hint } : {}),
+    ...(typeof value.level === "string" &&
+    QUESTION_LEVELS.has(value.level as QuestionLevel)
+      ? { level: value.level as QuestionLevel }
+      : {}),
+    ...(Array.isArray(value.options) ? { options: value.options as string[] } : {}),
+  };
+}
+
+function normalizeRawQuestion(
+  value: unknown,
+  level: PracticeLevel,
+): RawAIQuestion | null {
+  if (!isRecord(value) || !isRawQuestion(value, level)) return null;
+
+  const answer = coerceIntegerAnswer(value.answer);
+  if (answer === null) return null;
+
+  return {
+    type: value.type as QuestionType,
+    category: value.category as QuestionCategory,
+    prompt: (value.prompt as string).trim(),
+    answer,
+    ...(typeof value.unit === "string" ? { unit: value.unit } : {}),
+    ...(typeof value.hint === "string" ? { hint: value.hint } : {}),
+    ...(typeof value.level === "string" &&
+    QUESTION_LEVELS.has(value.level as QuestionLevel)
+      ? { level: value.level as QuestionLevel }
+      : {}),
+    ...(Array.isArray(value.options) ? { options: value.options as string[] } : {}),
+  };
 }
 
 function parseBatchResponse(
@@ -139,8 +206,12 @@ function parseBatchResponse(
     return null;
   }
 
-  const basic = parsed.basic.filter((q) => isRawQuestionItem(q, "basic"));
-  const advanced = parsed.advanced.filter((q) => isRawQuestionItem(q, "extension"));
+  const basic = parsed.basic
+    .map((q) => normalizeRawQuestionItem(q, "basic"))
+    .filter((q): q is RawAIQuestionItem => q !== null);
+  const advanced = parsed.advanced
+    .map((q) => normalizeRawQuestionItem(q, "extension"))
+    .filter((q): q is RawAIQuestionItem => q !== null);
 
   if (
     basic.length !== parsed.basic.length ||
@@ -170,7 +241,9 @@ export function parseRawAIQuestionResponse(
       return null;
     }
 
-    const questions = parsed.questions.filter((q) => isRawQuestion(q, level));
+    const questions = parsed.questions
+      .map((q) => normalizeRawQuestion(q, level))
+      .filter((q): q is RawAIQuestion => q !== null);
     if (questions.length !== parsed.questions.length) {
       return null;
     }

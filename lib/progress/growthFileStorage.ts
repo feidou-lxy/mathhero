@@ -2,11 +2,12 @@ import {
   createEmptyGrowth,
   normalizeGrowth,
 } from "@/lib/progress/growth";
+import { getStudentGrowthFilePath } from "@/lib/progress/dataPaths";
 import type { StudentGrowth } from "@/lib/types/growth";
 import { mkdir, readFile, writeFile } from "fs/promises";
 import path from "path";
 
-const GROWTH_PATH = path.join(process.cwd(), "data", "student-growth.json");
+const GROWTH_PATH = getStudentGrowthFilePath();
 
 export async function loadGrowthFromFile(): Promise<StudentGrowth> {
   try {
