@@ -100,10 +100,10 @@ function getDifficultyTier(
       profile.skills[s].total >= 3 && profile.skills[s].level === "proficient",
   );
 
-  if (weakSkills.length >= 2 || overallAccuracy < 45) return "easy";
-  if (strongSkills.length >= 2 && overallAccuracy >= 75) return "hard";
-  if (overallAccuracy >= 70) return "hard";
-  if (overallAccuracy >= 50) return "medium";
+  if (weakSkills.length >= 2 || overallAccuracy < 40) return "easy";
+  if (strongSkills.length >= 2 && overallAccuracy >= 68) return "hard";
+  if (overallAccuracy >= 62) return "hard";
+  if (overallAccuracy >= 48) return "medium";
   return "easy";
 }
 

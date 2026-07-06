@@ -84,8 +84,8 @@ ${buildGrade2StructureSection(plan)}
 1. 恰好 5 道，按 basic 槽位顺序与 category 一一对应，不得调换
 2. 必须覆盖：加法、减法、乘法、除法（前 4 道固定）
 3. 第 5 道为两步应用题（two_step_word）或时间/钱币（time_money），按槽位指定
-4. 加减法：100 以内，含进位/退位；乘法因数限 2/5/10；除法整除，含平均分或包含除法
-5. 题干简短，一步或两步可算完，数字符合二年级
+4. 加减法：100 以内，必须含进位/退位，优先两位数加两位数（均≥20）；乘法因数限 2/5/10 但可到 9；除法整除，被除数≥24
+5. 避免过于简单的整十、重复口诀题；题干可略丰富，一步或两步可算完
 
 【拓展题 advanced — 必须遵守】
 1. 恰好 2 道，按 advanced 槽位 category 出题
@@ -148,7 +148,7 @@ export function buildUserPrompt(
 
   const historySummary = generationPlan.hasHistory
     ? `历史总正确率 ${generationPlan.overallAccuracy}%，难度档位「${generationPlan.difficultyLabel}」。`
-    : "暂无历史记录，按适中难度出题。";
+    : "暂无历史记录，按偏高难度出题。";
 
   const skillSummary = profile ? formatProfileSkillSummary(profile) : "";
 

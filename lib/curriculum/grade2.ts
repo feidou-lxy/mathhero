@@ -51,27 +51,27 @@ export const GRADE2_BASIC_FIFTH_OPTIONS: QuestionCategory[] = [
 /** 各知识点的出题规范（写入 AI 提示词） */
 export const GRADE2_TOPIC_SPECS: Record<QuestionCategory, string> = {
   addition:
-    "100以内加法，必须含进位（个位相加满10向十位进1）。两数均在100以内，和≤100。",
+    "100以内加法，必须含进位（个位相加满10向十位进1）。优先两位数加两位数，两数均≥18，避免整十、整五等过于简单的组合。",
   subtraction:
-    "100以内减法，必须含退位（个位不够减向十位借1）。被减数≤100，差为非负整数。",
+    "100以内减法，必须含退位（个位不够减向十位借1）。被减数个位必须小于减数个位，被减数≥30，差为非负整数。",
   multiplication:
-    "表内乘法，因数仅限 2、5、10（如 2×7、5×6、10×3）。一步乘法，积≤100。",
+    "表内乘法，因数仅限 2、5、10，但可含 9×7、5×8、10×9 等较难题。一步乘法，积≤100，避免仅 2×2 这类过简单题。",
   division:
-    "表内除法，除数仅限 2、5、10。须覆盖「平均分」或「包含除法」情境（如：12÷3=？或 12里面有（ ）个3）。被除数≤100，整除无余数。",
+    "表内除法，除数仅限 2、5、10。须覆盖「平均分」或「包含除法」情境，被除数≥24、≤90，整除无余数，情境略丰富。",
   two_step_word:
-    "两步应用题（基础题）。生活情境，需经过两次运算（先…再…）。数字≤50，每步用加减乘除之一，最终答案为整数。",
+    "两步应用题（基础题）。生活情境，需经过两次运算（先…再…），关键信息不可一眼看出。数字≤80，每步用加减乘除之一，最终答案为整数。",
   time_money:
-    "时间或钱币问题（基础题）。时间：整点/半点/几时几分、时长计算；钱币：元角换算、找零、购物合计。数字贴近生活，答案为整数（元或分钟）。",
+    "时间或钱币问题（基础题）。时间：非整点时长、跨整点计算；钱币：元角换算、找零、多物品合计。数字贴近生活，答案为整数（元或分钟）。",
   pattern_sequence:
-    "找规律（数列）。给出 3-5 项数字或图形对应数，找下一项。规律可为等差、倍数、交替等，二年级可理解。",
+    "找规律（数列）。给出 4-5 项数字，找下一项。规律可为等差、倍数、交替、+3/-2 等，二年级可理解，避免仅 +1 的简单题。",
   logic_reasoning:
-    "简单逻辑推理。必须提供 options 选择题；条件须能严格推出唯一答案（排序题需能确定完整顺序或唯一最值，禁止模棱两可）。",
+    "简单逻辑推理。必须提供 options 选择题；条件须能严格推出唯一答案（排序题需能确定完整顺序或唯一最值，禁止模棱两可）。至少 2 个条件。",
   shape_pattern:
-    "图形规律。描述图形排列规律（如 ○△○△… 第10个是什么）。必须提供 options 选项数组（如 [\"○\", \"△\"]），answer 为正确选项下标（从 0 开始）。",
+    "图形规律。描述图形排列规律（如 ○△□○△□… 第12个是什么）。必须提供 options 选项数组，answer 为正确选项下标（从 0 开始）。",
   multi_step_word:
-    "多步骤应用题（2-3步，浅奥拓展）。情境略丰富，需 2-3 步推理或运算，数字≤100，答案为整数。",
+    "多步骤应用题（2-3步，浅奥拓展）。情境略丰富，需 2-3 步推理或运算，数字≤100，中间步骤不可省略，答案为整数。",
   clever_calc:
-    "巧算（拆分/凑整）。如 25+37+75、99+6、48+52 等，引导凑整或拆分，数字≤100，答案为整数。",
+    "巧算（拆分/凑整）。如 25+37+75、99+6、48+52、38+47+12 等，需拆分或凑整，数字≤100，答案为整数。",
 };
 
 export const GRADE2_TOPIC_LABELS: Record<QuestionCategory, string> = {
@@ -138,8 +138,8 @@ export function allocateGrade2BasicSlots(
 
 const THINKING_BY_TIER: Record<AdvancedDifficultyTier, QuestionCategory[]> = {
   easy: ["pattern_sequence", "shape_pattern"],
-  medium: ["pattern_sequence", "logic_reasoning", "clever_calc"],
-  hard: ["logic_reasoning", "clever_calc", "shape_pattern"],
+  medium: ["logic_reasoning", "clever_calc", "pattern_sequence"],
+  hard: ["logic_reasoning", "clever_calc", "multi_step_word"],
 };
 
 function pickThinkingCategory(
@@ -189,8 +189,8 @@ export function allocateGrade2AdvancedSlots(
   } else {
     const mediumSecond: QuestionCategory[] = [
       "multi_step_word",
+      "logic_reasoning",
       "clever_calc",
-      "pattern_sequence",
     ];
     second =
       mediumSecond[dateSeed(`${date}-adv`) % mediumSecond.length] ?? "clever_calc";

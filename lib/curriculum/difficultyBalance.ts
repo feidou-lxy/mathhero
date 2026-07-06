@@ -78,7 +78,7 @@ export function getBasicAccuracy(profile: StudentProfile): {
   }
 
   if (total === 0) {
-    return { accuracy: 50, hasHistory: false };
+    return { accuracy: 58, hasHistory: false };
   }
 
   return {
@@ -92,10 +92,10 @@ export function getBasicDifficultyTier(
   basicAccuracy: number,
   hasHistory: boolean,
 ): DifficultyTier {
-  if (!hasHistory) return "medium";
-  if (basicAccuracy >= 80) return "hard";
-  if (basicAccuracy < 45) return "easy";
-  if (basicAccuracy < 55) return "easy";
+  if (!hasHistory) return "hard";
+  if (basicAccuracy >= 70) return "hard";
+  if (basicAccuracy < 40) return "easy";
+  if (basicAccuracy < 52) return "easy";
   return "medium";
 }
 
@@ -104,9 +104,9 @@ export function getAdvancedDifficultyTier(
   basicAccuracy: number,
   hasHistory: boolean,
 ): AdvancedDifficultyTier {
-  if (!hasHistory) return "medium";
-  if (basicAccuracy >= 75) return "hard";
-  if (basicAccuracy < 50) return "easy";
+  if (!hasHistory) return "hard";
+  if (basicAccuracy >= 65) return "hard";
+  if (basicAccuracy < 48) return "easy";
   return "medium";
 }
 

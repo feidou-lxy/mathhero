@@ -22,39 +22,39 @@ function tierDifficultyHint(tier: GenerationPlan["difficultyTier"]): string {
   switch (tier) {
     case "hard":
       return `基础题难度偏高：
-- 加减法：100 以内，必须含进位/退位
-- 乘法：2/5/10 口诀，可含稍大因数
-- 除法：2/5/10 整除，可含两步情境
-- 应用题：两步，数字可至 50`;
+- 加减法：100 以内，必须连续进位/退位，避免整十或整五凑巧题
+- 乘法：2/5/10 口诀，因数可到 9（如 9×7、5×8、10×9）
+- 除法：被除数可到 90，含平均分与包含除法，情境略复杂
+- 应用题：两步，关键信息需提取，数字可到 80`;
     case "easy":
       return `基础题难度偏低：
-- 加减法：50 以内，进位/退位数字偏小
-- 乘法：仅 2 和 5 的口诀，因数≤5
-- 除法：被除数≤20，除数 2 或 5
-- 应用题：数字≤20，情境非常直观`;
+- 加减法：50 以内，含一次进位/退位
+- 乘法：2 和 5 的口诀，因数≤6
+- 除法：被除数≤30，除数 2 或 5
+- 应用题：数字≤25，情境直观`;
     default:
-      return `基础题难度适中：
-- 加减法：100 以内含进位/退位
-- 乘法：2/5/10 表内乘法
-- 除法：2/5/10 表内除法，整除
-- 应用题：两步为主，数字≤30`;
+      return `基础题难度适中（偏挑战）：
+- 加减法：100 以内，必须含进位/退位，两数均≥20
+- 乘法：2/5/10 表内，可含 9×、10×较大数
+- 除法：2/5/10 整除，被除数≤72，含情境
+- 应用题：两步为主，数字≤60，需理清先后关系`;
   }
 }
 
 function advancedTierHint(tier: AdvancedDifficultyTier): string {
   switch (tier) {
     case "hard":
-      return `拓展题（浅奥）难度偏高 — 学生基础题正确率高，可增加思维挑战：
-- 多步推理、复杂规律、3 步应用
-- 数字可至 100，仍不超二年级认知`;
+      return `拓展题（浅奥）难度偏高 — 增加思维挑战：
+- 5 项规律、3 条件推理、3 步应用或三数巧算
+- 数字可至 100，需多步思考，仍不超二年级认知`;
     case "easy":
-      return `拓展题（浅奥）难度偏低 — 学生基础题错误较多，降低思维难度：
-- 简单数列规律、AB 图形交替
-- 单条件推理，数字≤20，步骤≤2`;
+      return `拓展题（浅奥）难度偏低 — 学生基础题错误较多：
+- 3-4 项简单规律、AB 图形交替
+- 单条件推理，数字≤25，步骤≤2`;
     default:
-      return `拓展题（浅奥）难度适中：
-- 3-5 项找规律，2 步推理或巧算
-- 思维有挑战但不超纲`;
+      return `拓展题（浅奥）难度适中（偏挑战）：
+- 4-5 项找规律，2-3 步推理或凑整巧算
+- 逻辑题条件须严谨，思维有挑战但不超纲`;
   }
 }
 
@@ -70,30 +70,36 @@ function skillDifficultyHint(
   const focusNote = isFocus ? "【重点训练，可适当加练或略提难度】" : "";
 
   if (stats.total === 0) {
-    return `${tag}：暂无历史，按本次整体难度出题${focusNote}`;
+    const baseline =
+      plan.difficultyTier === "hard"
+        ? "按偏高难度出题（100以内进位退位、较大表内乘除）"
+        : plan.difficultyTier === "easy"
+          ? "按偏低难度出题"
+          : "按适中偏难难度出题";
+    return `${tag}：暂无历史，${baseline}${focusNote}`;
   }
 
   switch (skill) {
     case "addition":
-      if (stats.level === "proficient") return `${tag}：100 以内含进位加法，数字可更大${focusNote}`;
-      if (stats.level === "needs_improvement") return `${tag}：50 以内简单进位加法，数字偏小${focusNote}`;
-      return `${tag}：100 以内进位加法，适中难度${focusNote}`;
+      if (stats.level === "proficient") return `${tag}：100 以内连续进位加法，两数均≥25${focusNote}`;
+      if (stats.level === "needs_improvement") return `${tag}：50 以内进位加法，数字适中${focusNote}`;
+      return `${tag}：100 以内进位加法，避免过于简单的整十题${focusNote}`;
     case "subtraction":
-      if (stats.level === "proficient") return `${tag}：100 以内含退位减法${focusNote}`;
-      if (stats.level === "needs_improvement") return `${tag}：50 以内简单退位减法${focusNote}`;
-      return `${tag}：100 以内退位减法${focusNote}`;
+      if (stats.level === "proficient") return `${tag}：100 以内连续退位减法，被减数≥40${focusNote}`;
+      if (stats.level === "needs_improvement") return `${tag}：50 以内退位减法${focusNote}`;
+      return `${tag}：100 以内退位减法，个位必须不够减${focusNote}`;
     case "multiplication":
-      if (stats.level === "proficient") return `${tag}：2/5/10 乘法熟练，可含 10×较大数${focusNote}`;
-      if (stats.level === "needs_improvement") return `${tag}：仅 2 和 5 的乘法，因数≤5${focusNote}`;
-      return `${tag}：2/5/10 表内乘法${focusNote}`;
+      if (stats.level === "proficient") return `${tag}：2/5/10 乘法熟练，可含 9×、10×8 等${focusNote}`;
+      if (stats.level === "needs_improvement") return `${tag}：2 和 5 的乘法，因数≤6${focusNote}`;
+      return `${tag}：2/5/10 表内乘法，因数可到 9${focusNote}`;
     case "division":
-      if (stats.level === "proficient") return `${tag}：2/5/10 除法熟练，含平均分与包含除法${focusNote}`;
-      if (stats.level === "needs_improvement") return `${tag}：除数 2 或 5，被除数≤20，情境化平均分${focusNote}`;
-      return `${tag}：2/5/10 表内除法，整除，优先出平均分情境${focusNote}`;
+      if (stats.level === "proficient") return `${tag}：2/5/10 除法，被除数可到 80，含平均分与包含除法${focusNote}`;
+      if (stats.level === "needs_improvement") return `${tag}：除数 2 或 5，被除数≤30${focusNote}`;
+      return `${tag}：2/5/10 表内除法，情境略复杂，整除${focusNote}`;
     case "two_step_word":
-      if (stats.level === "proficient") return `${tag}：两步应用题，数字可至 50${focusNote}`;
-      if (stats.level === "needs_improvement") return `${tag}：两步应用题，每步数字≤10，情境直观${focusNote}`;
-      return `${tag}：两步应用题，数字≤30${focusNote}`;
+      if (stats.level === "proficient") return `${tag}：两步应用题，数字可到 80，需提取关键信息${focusNote}`;
+      if (stats.level === "needs_improvement") return `${tag}：两步应用题，每步数字≤15${focusNote}`;
+      return `${tag}：两步应用题，数字≤60${focusNote}`;
     case "time_money":
       if (stats.level === "proficient") return `${tag}：时间/钱币综合，可含找零${focusNote}`;
       if (stats.level === "needs_improvement") return `${tag}：整点/半点或整元购物，一步计算${focusNote}`;
@@ -194,7 +200,7 @@ ${formatExtensionTopicOverview()}`
 
   return `
 【基于学生历史表现的出题要求 — 必须遵守】
-历史总正确率：${plan.hasHistory ? `${plan.overallAccuracy}%` : "暂无记录，按适中难度"}
+历史总正确率：${plan.hasHistory ? `${plan.overallAccuracy}%` : "暂无记录，按偏高难度"}
 本次基础题难度：${plan.difficultyLabel}
 ${balanceSection}
 ${tierDifficultyHint(plan.difficultyTier)}
