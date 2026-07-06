@@ -50,6 +50,7 @@ function PracticePageInner() {
             nextButtonLabel={session.nextButtonLabel}
             isLastMainQuestion={session.isLastMainQuestion}
             calcTimerSeconds={session.calcTimerSeconds}
+            hidePerQuestionStars={session.isDailyMain}
             onAnswerChange={session.handleAnswerChange}
             onSubmitAnswer={() => void session.handleSubmitAnswer()}
             onSendChat={() => void session.handleSendChat()}

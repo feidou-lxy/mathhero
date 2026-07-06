@@ -2,6 +2,7 @@
 
 import {
   buildSessionStarBreakdown,
+  buildDailySessionStarBreakdown,
 } from "@/app/_components/growth/SessionStarsSummary";
 import { loadProfileFromStorage } from "@/lib/profile/clientStorage";
 import {
@@ -29,7 +30,11 @@ import {
 import { getTodayDateString } from "@/lib/ai/mockQuestions";
 import { TEACHER_UNAVAILABLE_MESSAGE } from "@/lib/ai/teacherCharacter";
 import { SKILL_LABELS, type ProfileSkill } from "@/types/math";
-import { awardQuestionStars, loadLevelProgress } from "@/lib/progress/growthStorage";
+import { awardQuestionStars, awardSessionStars, loadLevelProgress } from "@/lib/progress/growthStorage";
+import {
+  buildDailySessionStarContext,
+  isDailyMainSession,
+} from "@/lib/progress/dailyStarReward";
 import {
   gradeReinforcementRetry,
   persistQuestionResult,
@@ -95,6 +100,12 @@ export function usePracticeSession() {
   const sessionStartedAtRef = useRef<number | null>(null);
   const starsAwardedRef = useRef<Set<number>>(new Set());
   const perfectBonusRef = useRef(false);
+  const dailyStarsAwardedRef = useRef(false);
+  const [dailyStarContext, setDailyStarContext] = useState<{
+    correctCount: number;
+    allAnsweredInTime: boolean;
+    stars: number;
+  } | null>(null);
   const questionStartAtRef = useRef<number>(Date.now());
   const timerHandledQuestionRef = useRef<number | null>(null);
   const questionMetricsRef = useRef<
@@ -163,6 +174,8 @@ export function usePracticeSession() {
     setError(null);
     starsAwardedRef.current = new Set();
     perfectBonusRef.current = false;
+    dailyStarsAwardedRef.current = false;
+    setDailyStarContext(null);
     reportSavedRef.current = false;
     sessionStartedAtRef.current = null;
     questionMetricsRef.current = {};
@@ -284,14 +297,17 @@ export function usePracticeSession() {
     [],
   );
 
+  const isDailyMain = isDailyMainSession(activeTaskId, total);
+
   const awardStarsForCorrect = useCallback((question: Question) => {
+    if (isDailyMain) return;
     if (starsAwardedRef.current.has(question.id)) return;
 
     starsAwardedRef.current.add(question.id);
     const result = awardQuestionStars(question);
     setLevelProgress(result.levelProgress);
     setSessionQuestionStars((prev) => prev + result.starsAdded);
-  }, []);
+  }, [isDailyMain]);
 
   const saveQuestionResult = useCallback(
     (question: Question, isCorrect: boolean) => {
@@ -703,7 +719,27 @@ export function usePracticeSession() {
   ]);
 
   useEffect(() => {
+    if (phase !== "review" || dailyStarsAwardedRef.current || total === 0) return;
+    if (!isDailyMain) return;
+
+    dailyStarsAwardedRef.current = true;
+    const context = buildDailySessionStarContext(
+      mainQuestions,
+      results,
+      questionMetricsRef.current,
+    );
+    setDailyStarContext(context);
+
+    if (context.stars > 0) {
+      const result = awardSessionStars(context.stars);
+      setLevelProgress(result.levelProgress);
+      setSessionQuestionStars(context.stars);
+    }
+  }, [phase, isDailyMain, total, mainQuestions, results]);
+
+  useEffect(() => {
     if (phase !== "review" || perfectBonusRef.current || total === 0) return;
+    if (isDailyMain) return;
     if (correctCount !== total) return;
 
     perfectBonusRef.current = true;
@@ -712,12 +748,26 @@ export function usePracticeSession() {
       setLevelProgress(bonus.levelProgress);
       setSessionPerfectBonus(bonus.starsAdded);
     }
-  }, [phase, correctCount, total]);
+  }, [phase, correctCount, total, isDailyMain]);
 
-  const sessionStarBreakdown = useMemo(
-    () => buildSessionStarBreakdown(sessionQuestionStars, sessionPerfectBonus),
-    [sessionQuestionStars, sessionPerfectBonus],
-  );
+  const sessionStarBreakdown = useMemo(() => {
+    if (isDailyMain && dailyStarContext) {
+      return buildDailySessionStarBreakdown(
+        dailyStarContext.stars,
+        dailyStarContext.correctCount,
+        total,
+        dailyStarContext.allAnsweredInTime,
+      );
+    }
+
+    return buildSessionStarBreakdown(sessionQuestionStars, sessionPerfectBonus);
+  }, [
+    isDailyMain,
+    dailyStarContext,
+    total,
+    sessionQuestionStars,
+    sessionPerfectBonus,
+  ]);
 
   const streakDays = useMemo(() => {
     if (taskProgress) return taskProgress.plan.streakDays;
@@ -823,5 +873,6 @@ export function usePracticeSession() {
     pathProgress,
     parentReport,
     calcTimerSeconds,
+    isDailyMain,
   };
 }

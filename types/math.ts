@@ -312,6 +312,12 @@ export type SessionStarBreakdown = {
   questionStars: number;
   perfectBonus: number;
   total: number;
+  /** 每日闯关结算说明 */
+  dailyReward?: {
+    correctCount: number;
+    questionTotal: number;
+    allAnsweredInTime: boolean;
+  };
 };
 
 /** 今日任务 */

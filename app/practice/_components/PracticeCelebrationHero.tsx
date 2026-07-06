@@ -67,13 +67,26 @@ export function PracticeCelebrationHero({
             </p>
             {starBreakdown.total > 0 && (
               <p className="mt-1 text-[11px] leading-snug text-zinc-500 dark:text-zinc-500">
-                {starBreakdown.questionStars > 0 &&
-                  `答对 +${starBreakdown.questionStars}`}
-                {starBreakdown.questionStars > 0 &&
-                  starBreakdown.perfectBonus > 0 &&
-                  " · "}
-                {starBreakdown.perfectBonus > 0 &&
-                  `全对奖励 +${starBreakdown.perfectBonus}`}
+                {starBreakdown.dailyReward
+                  ? `倒计时内答对 ${starBreakdown.dailyReward.correctCount} 题`
+                  : (
+                    <>
+                      {starBreakdown.questionStars > 0 &&
+                        `答对 +${starBreakdown.questionStars}`}
+                      {starBreakdown.questionStars > 0 &&
+                        starBreakdown.perfectBonus > 0 &&
+                        " · "}
+                      {starBreakdown.perfectBonus > 0 &&
+                        `全对奖励 +${starBreakdown.perfectBonus}`}
+                    </>
+                  )}
+              </p>
+            )}
+            {starBreakdown.dailyReward && starBreakdown.total === 0 && (
+              <p className="mt-1 text-[11px] leading-snug text-zinc-500 dark:text-zinc-500">
+                {starBreakdown.dailyReward.allAnsweredInTime
+                  ? "需答对 3 题及以上"
+                  : "有计算题超时"}
               </p>
             )}
           </div>

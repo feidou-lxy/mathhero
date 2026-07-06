@@ -31,6 +31,7 @@ type PracticeAnsweringCardProps = {
   nextButtonLabel: string;
   isLastMainQuestion: boolean;
   calcTimerSeconds: number | null;
+  hidePerQuestionStars?: boolean;
   onAnswerChange: (value: string) => void;
   onSubmitAnswer: () => void;
   onSendChat: () => void;
@@ -57,6 +58,7 @@ export function PracticeAnsweringCard({
   nextButtonLabel,
   isLastMainQuestion,
   calcTimerSeconds,
+  hidePerQuestionStars = false,
   onAnswerChange,
   onSubmitAnswer,
   onSendChat,
@@ -257,7 +259,7 @@ export function PracticeAnsweringCard({
             )}
           </div>
           <p>{feedback.message}</p>
-          {feedback.isCorrect && (
+          {feedback.isCorrect && !hidePerQuestionStars && (
             <p className="mt-2 text-sm font-semibold text-amber-600 dark:text-amber-400">
               +{getStarsForQuestion(displayQuestion)} ⭐
             </p>

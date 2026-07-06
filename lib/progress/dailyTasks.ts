@@ -34,7 +34,7 @@ function createDailyMainTask(): DailyTask {
     id: "daily_main",
     type: "daily_main",
     title: "今日闯关",
-    description: "大宝小朋友，来挑战一下吧！",
+    description: "7 道题，倒计时内完成；按答对题数获得 0–5 颗星星",
     required: true,
     status: "pending",
   };

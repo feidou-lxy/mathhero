@@ -51,6 +51,21 @@ export type AwardQuestionStarsResult = {
   leveledUp: boolean;
 };
 
+export function awardSessionStars(amount: number): AwardQuestionStarsResult {
+  const before = loadGrowth();
+  const beforeLevel = getLevelProgress(before.totalStars).level;
+  const growth = addStars(before, amount);
+  saveGrowth(growth);
+  const levelProgress = getLevelProgress(growth.totalStars);
+
+  return {
+    growth,
+    levelProgress,
+    starsAdded: amount,
+    leveledUp: levelProgress.level > beforeLevel,
+  };
+}
+
 export function awardQuestionStars(question: Question): AwardQuestionStarsResult {
   const before = loadGrowth();
   const beforeLevel = getLevelProgress(before.totalStars).level;
