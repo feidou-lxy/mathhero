@@ -13,30 +13,40 @@ export function LearningPathSection() {
   const [activeWeekIndex, setActiveWeekIndex] = useState(0);
   const scrollRef = useRef<HTMLDivElement>(null);
   const slideRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const lastCurrentWeek = useRef<number | null>(null);
 
   useEffect(() => {
-    const refresh = () => {
-      const loaded = loadLearningPathView();
-      setView(loaded);
-      setActiveWeekIndex(loaded.progress.currentWeek - 1);
-    };
+    const refresh = () => setView(loadLearningPathView());
     refresh();
     window.addEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
     return () => window.removeEventListener(STUDENT_DATA_UPDATED_EVENT, refresh);
   }, []);
 
+  // 仅在首次进入或当前周推进时定位，数据同步刷新时不打断用户滑动
   useEffect(() => {
     if (!view || !scrollRef.current) return;
 
-    const target = slideRefs.current[view.progress.currentWeek - 1];
+    const currentWeek = view.progress.currentWeek;
+    const isFirstLoad = lastCurrentWeek.current === null;
+    const weekAdvanced =
+      lastCurrentWeek.current !== null &&
+      lastCurrentWeek.current !== currentWeek;
+
+    lastCurrentWeek.current = currentWeek;
+    if (!isFirstLoad && !weekAdvanced) return;
+
+    const target = slideRefs.current[currentWeek - 1];
     if (!target) return;
 
-    target.scrollIntoView({
-      behavior: "instant",
-      inline: "center",
-      block: "nearest",
+    requestAnimationFrame(() => {
+      target.scrollIntoView({
+        behavior: isFirstLoad ? "instant" : "smooth",
+        inline: "center",
+        block: "nearest",
+      });
+      setActiveWeekIndex(currentWeek - 1);
     });
-  }, [view]);
+  }, [view?.progress.currentWeek]);
 
   const updateActiveIndex = useCallback(() => {
     const container = scrollRef.current;
