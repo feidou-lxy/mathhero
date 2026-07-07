@@ -125,15 +125,19 @@ export function mergeGrowthRecords(
   a: StudentGrowth,
   b: StudentGrowth,
 ): StudentGrowth {
-  const totalStars = Math.max(a.totalStars, b.totalStars);
-  const updatedAt =
-    new Date(a.updatedAt).getTime() >= new Date(b.updatedAt).getTime()
-      ? a.updatedAt
-      : b.updatedAt;
+  const left = normalizeGrowth(a);
+  const right = normalizeGrowth(b);
+  const leftTime = new Date(left.updatedAt).getTime();
+  const rightTime = new Date(right.updatedAt).getTime();
+
+  // 较新的记录优先（支持星星银行兑换扣星）；时间相同时取较多星星以免丢分
+  if (leftTime !== rightTime) {
+    return leftTime > rightTime ? left : right;
+  }
 
   return {
-    studentId: a.studentId || b.studentId,
-    totalStars,
-    updatedAt,
+    studentId: left.studentId || right.studentId,
+    totalStars: Math.max(left.totalStars, right.totalStars),
+    updatedAt: left.updatedAt,
   };
 }

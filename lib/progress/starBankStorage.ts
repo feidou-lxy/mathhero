@@ -1,6 +1,6 @@
 import { spendStars } from "@/lib/progress/growth";
 import { loadGrowth, saveGrowth } from "@/lib/progress/growthStorage";
-import { scheduleStudentDataPush } from "@/lib/progress/studentDataPush";
+import { scheduleStudentDataPush, syncStudentDataNow } from "@/lib/progress/studentDataPush";
 import {
   appendRedemption,
   buildRedemption,
@@ -54,6 +54,7 @@ export function redeemStarsForYuan(yuan: number): StarBankRedeemResult {
   const account = appendRedemption(readRaw(), redemption);
   saveGrowth(afterGrowth);
   saveStarBankAccount(account);
+  syncStudentDataNow();
 
   return {
     ok: true,
