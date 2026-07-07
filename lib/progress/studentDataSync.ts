@@ -1,8 +1,8 @@
 import {
   addStars,
   createEmptyGrowth,
-  getLifetimeStars,
   mergeGrowthRecords,
+  reconcileGrowthWithRedemptions,
 } from "@/lib/progress/growth";
 import { notifyGrowthUpdated } from "@/lib/progress/growthEvents";
 import { notifyStudentDataUpdated } from "@/lib/progress/studentDataEvents";
@@ -28,43 +28,11 @@ export { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 const RESTORED_STAR_COUNT = 20;
 
 function applyStarBaseline(bundle: StudentDataBundle): StudentDataBundle {
-  const growth = bundle.growth;
   const redeemed = bundle.starBank.totalRedeemedStars ?? 0;
+  const growth = reconcileGrowthWithRedemptions(bundle.growth, redeemed);
 
-  if (growth.totalStars > 0) {
-    return bundle;
-  }
-
-  const lifetime = getLifetimeStars(growth);
-
-  if (lifetime > 0 && redeemed > 0) {
-    return {
-      ...bundle,
-      growth: {
-        ...growth,
-        totalStars: Math.max(0, lifetime - redeemed),
-        lifetimeStars: lifetime,
-        updatedAt: new Date().toISOString(),
-      },
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
-  if (lifetime > 0) {
-    return {
-      ...bundle,
-      growth: {
-        ...growth,
-        totalStars: lifetime,
-        lifetimeStars: lifetime,
-        updatedAt: new Date().toISOString(),
-      },
-      updatedAt: new Date().toISOString(),
-    };
-  }
-
-  if (redeemed > 0) {
-    return bundle;
+  if (growth.totalStars > 0 || growth.lifetimeStars > 0 || redeemed > 0) {
+    return { ...bundle, growth };
   }
 
   const now = new Date().toISOString();

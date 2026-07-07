@@ -158,13 +158,13 @@ export function mergeGrowthRecords(
   const rightTime = new Date(right.updatedAt).getTime();
   const lifetimeStars = Math.max(left.lifetimeStars, right.lifetimeStars);
 
-  // 余额较新的记录优先（支持星星银行兑换扣星）；时间相同时取较多余额以免丢分
+  // 余额由 reconcileGrowthWithRedemptions 结合兑换记录推算；此处仅保留较新的更新时间
   if (leftTime !== rightTime) {
     const newer = leftTime > rightTime ? left : right;
     return {
       studentId: left.studentId || right.studentId,
       totalStars: newer.totalStars,
-      lifetimeStars: Math.max(lifetimeStars, newer.totalStars),
+      lifetimeStars: Math.max(lifetimeStars, newer.lifetimeStars),
       updatedAt: newer.updatedAt,
     };
   }

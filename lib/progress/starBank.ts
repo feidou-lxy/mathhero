@@ -206,13 +206,7 @@ export function mergeStarBankAccounts(
 ): StarBankAccount {
   const left = normalizeStarBankAccount(a);
   const right = normalizeStarBankAccount(b);
-  const leftTime = new Date(left.updatedAt).getTime();
-  const rightTime = new Date(right.updatedAt).getTime();
 
-  // 较新的记录优先（支持清空无效兑换、扣星后同步）
-  if (leftTime !== rightTime) {
-    return leftTime > rightTime ? left : right;
-  }
-
+  // 始终合并兑换记录，避免旧设备空记录覆盖云端有效数据
   return unionRedemptions(left, right);
 }
