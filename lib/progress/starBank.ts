@@ -162,7 +162,7 @@ export function appendRedemption(
   };
 }
 
-export function mergeStarBankAccounts(
+function unionRedemptions(
   a: StarBankAccount,
   b: StarBankAccount,
 ): StarBankAccount {
@@ -198,4 +198,21 @@ export function mergeStarBankAccounts(
         ? a.updatedAt
         : b.updatedAt,
   };
+}
+
+export function mergeStarBankAccounts(
+  a: StarBankAccount,
+  b: StarBankAccount,
+): StarBankAccount {
+  const left = normalizeStarBankAccount(a);
+  const right = normalizeStarBankAccount(b);
+  const leftTime = new Date(left.updatedAt).getTime();
+  const rightTime = new Date(right.updatedAt).getTime();
+
+  // 较新的记录优先（支持清空无效兑换、扣星后同步）
+  if (leftTime !== rightTime) {
+    return leftTime > rightTime ? left : right;
+  }
+
+  return unionRedemptions(left, right);
 }

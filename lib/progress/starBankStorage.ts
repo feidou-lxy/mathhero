@@ -38,6 +38,14 @@ export function saveStarBankAccount(account: StarBankAccount): void {
   scheduleStudentDataPush();
 }
 
+export function clearStarBankRedemptions(): StarBankAccount {
+  const account = createEmptyStarBankAccount();
+  writeRaw(account);
+  scheduleStudentDataPush();
+  syncStudentDataNow();
+  return account;
+}
+
 export function redeemStarsForYuan(yuan: number): StarBankRedeemResult {
   const growth = loadGrowth();
   const error = validateRedeemRequest(yuan, growth.totalStars);
