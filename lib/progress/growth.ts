@@ -185,17 +185,28 @@ export function reconcileGrowthWithRedemptions(
   totalRedeemedStars: number,
 ): StudentGrowth {
   const redeemed = Math.max(0, Math.floor(totalRedeemedStars));
-  const inferredLifetime = growth.totalStars + redeemed;
-  const lifetimeStars = Math.max(getLifetimeStars(growth), inferredLifetime);
-  let totalStars = growth.totalStars;
+  const lifetimeStars = Math.max(getLifetimeStars(growth), growth.totalStars);
 
-  if (lifetimeStars >= redeemed && totalStars + redeemed !== lifetimeStars) {
-    totalStars = Math.max(0, lifetimeStars - redeemed);
+  if (redeemed > 0 && lifetimeStars >= redeemed) {
+    return {
+      ...growth,
+      totalStars: lifetimeStars - redeemed,
+      lifetimeStars,
+    };
+  }
+
+  if (redeemed > 0) {
+    const inferredLifetime = growth.totalStars + redeemed;
+    return {
+      ...growth,
+      totalStars: growth.totalStars,
+      lifetimeStars: Math.max(lifetimeStars, inferredLifetime),
+    };
   }
 
   return {
     ...growth,
-    totalStars,
+    totalStars: growth.totalStars,
     lifetimeStars,
   };
 }
