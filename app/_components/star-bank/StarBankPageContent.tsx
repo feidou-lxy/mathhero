@@ -48,7 +48,7 @@ export function StarBankPageContent() {
 
   const parsedYuan = useMemo(() => parseYuanInput(yuanInput), [yuanInput]);
   const starsNeeded = parsedYuan ? yuanToStars(parsedYuan) : 0;
-  const maxYuan = levelProgress ? starsToYuan(levelProgress.totalStars) : 0;
+  const maxYuan = levelProgress ? starsToYuan(levelProgress.balanceStars) : 0;
   const visibleRedemptions = useMemo(() => {
     if (!account) return [];
     if (showAllRedemptions) return account.redemptions;
@@ -114,11 +114,15 @@ export function StarBankPageContent() {
             当前星星
           </p>
           <p className="mt-2 text-4xl font-bold text-amber-600 dark:text-amber-400">
-            ⭐ {levelProgress.totalStars}
+            ⭐ {levelProgress.balanceStars}
           </p>
           <p className="mt-2 text-sm text-amber-700 dark:text-amber-300">
             最多可兑换 {formatYuan(maxYuan)} 元 · Lv.{levelProgress.level}{" "}
             {levelProgress.title}
+            <span className="text-amber-600/80 dark:text-amber-400/80">
+              {" "}
+              · 累计获得 {levelProgress.lifetimeStars} 星
+            </span>
           </p>
           {account.totalRedeemedYuan > 0 && (
             <p className="mt-1 text-xs text-amber-600/80 dark:text-amber-400/80">
@@ -169,7 +173,7 @@ export function StarBankPageContent() {
           <button
             type="button"
             onClick={handleRedeem}
-            disabled={submitting || !parsedYuan || starsNeeded > levelProgress.totalStars}
+            disabled={submitting || !parsedYuan || starsNeeded > levelProgress.balanceStars}
             className="mt-5 w-full rounded-full bg-foreground py-3.5 text-base font-semibold text-background transition-colors hover:bg-[#383838] disabled:cursor-not-allowed disabled:opacity-50 dark:hover:bg-[#ccc]"
           >
             {submitting ? "兑换中…" : "确认兑换"}

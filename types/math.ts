@@ -287,7 +287,10 @@ export type GrowthLevel = 1 | 2 | 3 | 4;
 
 export type StudentGrowth = {
   studentId: string;
+  /** 当前可用星星余额（兑换会扣减） */
   totalStars: number;
+  /** 累计获得的星星（决定等级，兑换不扣减） */
+  lifetimeStars: number;
   updatedAt: string;
 };
 
@@ -300,7 +303,10 @@ export type LevelDefinition = {
 export type LevelProgress = {
   level: GrowthLevel;
   title: string;
-  totalStars: number;
+  /** 累计获得星星（决定等级） */
+  lifetimeStars: number;
+  /** 当前可用星星余额 */
+  balanceStars: number;
   currentLevelMinStars: number;
   nextLevelMinStars: number | null;
   starsToNextLevel: number;

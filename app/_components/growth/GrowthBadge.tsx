@@ -45,7 +45,7 @@ export function GrowthBadge() {
         </span>
       </p>
       <p className="text-sm font-semibold leading-none text-amber-600 dark:text-amber-400">
-        ⭐ {levelProgress.totalStars}
+        ⭐ {levelProgress.balanceStars}
       </p>
     </Link>
   );

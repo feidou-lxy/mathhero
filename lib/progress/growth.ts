@@ -21,8 +21,20 @@ export function createEmptyGrowth(studentId = DEFAULT_STUDENT_ID): StudentGrowth
   return {
     studentId,
     totalStars: 0,
+    lifetimeStars: 0,
     updatedAt: new Date().toISOString(),
   };
+}
+
+export function getLifetimeStars(growth: StudentGrowth): number {
+  const balance = growth.totalStars;
+  if (
+    typeof growth.lifetimeStars === "number" &&
+    growth.lifetimeStars >= balance
+  ) {
+    return Math.floor(growth.lifetimeStars);
+  }
+  return balance;
 }
 
 export function getStarsForQuestionType(type: QuestionType): number {
@@ -36,9 +48,12 @@ export function getStarsForQuestion(question: Question): number {
 export function addStars(growth: StudentGrowth, amount: number): StudentGrowth {
   if (amount <= 0) return growth;
 
+  const lifetimeStars = getLifetimeStars(growth) + amount;
+
   return {
     ...growth,
     totalStars: growth.totalStars + amount,
+    lifetimeStars,
     updatedAt: new Date().toISOString(),
   };
 }
@@ -52,15 +67,16 @@ export function spendStars(
   return {
     ...growth,
     totalStars: growth.totalStars - amount,
+    lifetimeStars: Math.max(getLifetimeStars(growth), growth.totalStars),
     updatedAt: new Date().toISOString(),
   };
 }
 
-export function getLevelForStars(totalStars: number): LevelDefinition {
+export function getLevelForStars(lifetimeStars: number): LevelDefinition {
   let current = LEVEL_DEFINITIONS[0];
 
   for (const def of LEVEL_DEFINITIONS) {
-    if (totalStars >= def.minStars) {
+    if (lifetimeStars >= def.minStars) {
       current = def;
     }
   }
@@ -68,8 +84,11 @@ export function getLevelForStars(totalStars: number): LevelDefinition {
   return current;
 }
 
-export function getLevelProgress(totalStars: number): LevelProgress {
-  const current = getLevelForStars(totalStars);
+export function getLevelProgress(
+  lifetimeStars: number,
+  balanceStars: number,
+): LevelProgress {
+  const current = getLevelForStars(lifetimeStars);
   const currentIndex = LEVEL_DEFINITIONS.findIndex((d) => d.level === current.level);
   const next = LEVEL_DEFINITIONS[currentIndex + 1] ?? null;
 
@@ -77,7 +96,8 @@ export function getLevelProgress(totalStars: number): LevelProgress {
     return {
       level: current.level as GrowthLevel,
       title: current.title,
-      totalStars,
+      lifetimeStars,
+      balanceStars,
       currentLevelMinStars: current.minStars,
       nextLevelMinStars: null,
       starsToNextLevel: 0,
@@ -87,17 +107,18 @@ export function getLevelProgress(totalStars: number): LevelProgress {
   }
 
   const range = next.minStars - current.minStars;
-  const progress = totalStars - current.minStars;
+  const progress = lifetimeStars - current.minStars;
   const progressPercent =
     range === 0 ? 100 : Math.min(100, Math.round((progress / range) * 100));
 
   return {
     level: current.level as GrowthLevel,
     title: current.title,
-    totalStars,
+    lifetimeStars,
+    balanceStars,
     currentLevelMinStars: current.minStars,
     nextLevelMinStars: next.minStars,
-    starsToNextLevel: Math.max(0, next.minStars - totalStars),
+    starsToNextLevel: Math.max(0, next.minStars - lifetimeStars),
     progressPercent,
     isMaxLevel: false,
   };
@@ -113,10 +134,16 @@ export function normalizeGrowth(data: unknown): StudentGrowth {
     typeof record.totalStars === "number" && record.totalStars >= 0
       ? Math.floor(record.totalStars)
       : 0;
+  let lifetimeStars =
+    typeof record.lifetimeStars === "number" && record.lifetimeStars >= 0
+      ? Math.floor(record.lifetimeStars)
+      : totalStars;
+  lifetimeStars = Math.max(lifetimeStars, totalStars);
 
   return {
     studentId: record.studentId ?? base.studentId,
     totalStars,
+    lifetimeStars,
     updatedAt: record.updatedAt ?? new Date().toISOString(),
   };
 }
@@ -129,15 +156,46 @@ export function mergeGrowthRecords(
   const right = normalizeGrowth(b);
   const leftTime = new Date(left.updatedAt).getTime();
   const rightTime = new Date(right.updatedAt).getTime();
+  const lifetimeStars = Math.max(left.lifetimeStars, right.lifetimeStars);
 
-  // 较新的记录优先（支持星星银行兑换扣星）；时间相同时取较多星星以免丢分
+  // 余额较新的记录优先（支持星星银行兑换扣星）；时间相同时取较多余额以免丢分
   if (leftTime !== rightTime) {
-    return leftTime > rightTime ? left : right;
+    const newer = leftTime > rightTime ? left : right;
+    return {
+      studentId: left.studentId || right.studentId,
+      totalStars: newer.totalStars,
+      lifetimeStars: Math.max(lifetimeStars, newer.totalStars),
+      updatedAt: newer.updatedAt,
+    };
   }
+
+  const totalStars = Math.max(left.totalStars, right.totalStars);
 
   return {
     studentId: left.studentId || right.studentId,
-    totalStars: Math.max(left.totalStars, right.totalStars),
+    totalStars,
+    lifetimeStars: Math.max(lifetimeStars, totalStars),
     updatedAt: left.updatedAt,
+  };
+}
+
+/** 结合星星银行已兑换数量，推算并修正累计星星与余额 */
+export function reconcileGrowthWithRedemptions(
+  growth: StudentGrowth,
+  totalRedeemedStars: number,
+): StudentGrowth {
+  const redeemed = Math.max(0, Math.floor(totalRedeemedStars));
+  const inferredLifetime = growth.totalStars + redeemed;
+  const lifetimeStars = Math.max(getLifetimeStars(growth), inferredLifetime);
+  let totalStars = growth.totalStars;
+
+  if (lifetimeStars >= redeemed && totalStars + redeemed !== lifetimeStars) {
+    totalStars = Math.max(0, lifetimeStars - redeemed);
+  }
+
+  return {
+    ...growth,
+    totalStars,
+    lifetimeStars,
   };
 }

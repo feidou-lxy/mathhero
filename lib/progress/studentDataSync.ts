@@ -1,6 +1,7 @@
 import {
   addStars,
   createEmptyGrowth,
+  getLifetimeStars,
   mergeGrowthRecords,
 } from "@/lib/progress/growth";
 import { notifyGrowthUpdated } from "@/lib/progress/growthEvents";
@@ -19,21 +20,63 @@ import {
   pushStudentDataToServer,
 } from "@/lib/progress/studentDataServerApi";
 import type { StudentDataBundle } from "@/lib/types/studentData";
-import type { StudentGrowth } from "@/lib/types/growth";
 
 export { GROWTH_UPDATED_EVENT } from "@/lib/progress/growthEvents";
 export { STUDENT_DATA_UPDATED_EVENT } from "@/lib/progress/studentDataEvents";
 
-/** 历史数据恢复：星星被清空时补回 Lv2 门槛 */
+/** 历史数据恢复：全新账号无兑换记录时的初始星星 */
 const RESTORED_STAR_COUNT = 20;
 
-function applyStarBaseline(growth: StudentGrowth): StudentGrowth {
-  if (growth.totalStars > 0) return growth;
+function applyStarBaseline(bundle: StudentDataBundle): StudentDataBundle {
+  const growth = bundle.growth;
+  const redeemed = bundle.starBank.totalRedeemedStars ?? 0;
 
+  if (growth.totalStars > 0) {
+    return bundle;
+  }
+
+  const lifetime = getLifetimeStars(growth);
+
+  if (lifetime > 0 && redeemed > 0) {
+    return {
+      ...bundle,
+      growth: {
+        ...growth,
+        totalStars: Math.max(0, lifetime - redeemed),
+        lifetimeStars: lifetime,
+        updatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  if (lifetime > 0) {
+    return {
+      ...bundle,
+      growth: {
+        ...growth,
+        totalStars: lifetime,
+        lifetimeStars: lifetime,
+        updatedAt: new Date().toISOString(),
+      },
+      updatedAt: new Date().toISOString(),
+    };
+  }
+
+  if (redeemed > 0) {
+    return bundle;
+  }
+
+  const now = new Date().toISOString();
   return {
-    ...growth,
-    totalStars: RESTORED_STAR_COUNT,
-    updatedAt: new Date().toISOString(),
+    ...bundle,
+    growth: {
+      ...growth,
+      totalStars: RESTORED_STAR_COUNT,
+      lifetimeStars: RESTORED_STAR_COUNT,
+      updatedAt: now,
+    },
+    updatedAt: now,
   };
 }
 
@@ -45,13 +88,11 @@ function applyGrowthFixes(bundle: StudentDataBundle): StudentDataBundle {
       ? addStars(createEmptyGrowth(localGrowth.studentId), recoveredStars)
       : localGrowth;
 
-  growth = applyStarBaseline(growth);
-
-  return {
+  return applyStarBaseline({
     ...bundle,
     growth,
     updatedAt: new Date().toISOString(),
-  };
+  });
 }
 
 function notifyAllUpdated(): void {
@@ -90,7 +131,7 @@ export async function syncStudentDataWithServer(): Promise<StudentDataBundle> {
 }
 
 /** @deprecated 使用 syncStudentDataWithServer */
-export async function syncGrowthWithServer(): Promise<StudentGrowth> {
+export async function syncGrowthWithServer() {
   const bundle = await syncStudentDataWithServer();
   return bundle.growth;
 }

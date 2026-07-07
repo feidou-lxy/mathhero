@@ -50,7 +50,7 @@ export function GrowthCard({ levelProgress: external, compact = false }: GrowthC
             当前星星
           </p>
           <p className="mt-1 text-xl font-semibold text-amber-600 dark:text-amber-400">
-            ⭐ {levelProgress.totalStars}
+            ⭐ {levelProgress.balanceStars}
           </p>
         </div>
       </div>
@@ -61,7 +61,7 @@ export function GrowthCard({ levelProgress: external, compact = false }: GrowthC
           <span>
             {levelProgress.isMaxLevel
               ? "已达最高等级"
-              : `距 Lv.${levelProgress.level + 1} 还需 ${levelProgress.starsToNextLevel} 星`}
+              : `距 Lv.${levelProgress.level + 1} 还需 ${levelProgress.starsToNextLevel} 星（按累计获得）`}
           </span>
         </div>
         <div className="h-2.5 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">

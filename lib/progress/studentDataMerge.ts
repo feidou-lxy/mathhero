@@ -1,4 +1,9 @@
-import { mergeGrowthRecords, normalizeGrowth, createEmptyGrowth } from "@/lib/progress/growth";
+import {
+  mergeGrowthRecords,
+  normalizeGrowth,
+  createEmptyGrowth,
+  reconcileGrowthWithRedemptions,
+} from "@/lib/progress/growth";
 import { normalizeProfile, createEmptyProfile, judgeSkillLevel } from "@/lib/profile/studentProfile";
 import { LEVEL_LABELS, PROFILE_SKILLS, type SkillStats } from "@/lib/types/profile";
 import { normalizeLearningPath, createInitialLearningPath, getWeekPracticeDates, PATH_WEEK_REQUIRED_DAYS } from "@/lib/progress/learningPath";
@@ -277,16 +282,22 @@ export function mergeStudentDataBundles(
       ? left.updatedAt
       : right.updatedAt;
 
+  const starBank = mergeStarBankAccounts(left.starBank, right.starBank);
+  const growth = reconcileGrowthWithRedemptions(
+    mergeGrowthRecords(left.growth, right.growth),
+    starBank.totalRedeemedStars,
+  );
+
   return {
     studentId: left.studentId || right.studentId,
     updatedAt,
     profile: mergeProfiles(left.profile, right.profile),
-    growth: mergeGrowthRecords(left.growth, right.growth),
+    growth,
     learningPath: mergeLearningPath(left.learningPath, right.learningPath),
     dailyTasks: mergeDailyTasks(left.dailyTasks, right.dailyTasks),
     parentReports: mergeParentReports(left.parentReports, right.parentReports),
     mistakeBook: mergeMistakeBooks(left.mistakeBook, right.mistakeBook),
-    starBank: mergeStarBankAccounts(left.starBank, right.starBank),
+    starBank,
   };
 }
 
@@ -298,12 +309,17 @@ export function normalizeStudentDataBundle(data: unknown): StudentDataBundle {
   }
 
   const record = data as Partial<StudentDataBundle>;
+  const starBank = normalizeStarBankAccount(record.starBank);
+  const growth = reconcileGrowthWithRedemptions(
+    normalizeGrowth(record.growth),
+    starBank.totalRedeemedStars,
+  );
 
   return {
     studentId: record.studentId ?? "default",
     updatedAt: record.updatedAt ?? now,
     profile: normalizeProfile(record.profile),
-    growth: normalizeGrowth(record.growth),
+    growth,
     learningPath: normalizeLearningPath(record.learningPath),
     dailyTasks:
       record.dailyTasks && typeof record.dailyTasks === "object"
@@ -314,7 +330,7 @@ export function normalizeStudentDataBundle(data: unknown): StudentDataBundle {
         ? mergeParentReports({ reports: [] }, record.parentReports as ParentReportStore)
         : { reports: [] },
     mistakeBook: normalizeMistakeBook(record.mistakeBook),
-    starBank: normalizeStarBankAccount(record.starBank),
+    starBank,
   };
 }
 

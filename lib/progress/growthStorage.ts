@@ -2,6 +2,7 @@ import {
   addStars,
   createEmptyGrowth,
   getLevelProgress,
+  getLifetimeStars,
   getStarsForQuestion,
   normalizeGrowth,
   PERFECT_BONUS_STARS,
@@ -30,6 +31,10 @@ function writeRaw(growth: StudentGrowth): void {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(growth));
 }
 
+function toLevelProgress(growth: StudentGrowth): LevelProgress {
+  return getLevelProgress(getLifetimeStars(growth), growth.totalStars);
+}
+
 export function loadGrowth(): StudentGrowth {
   return readRaw() ?? createEmptyGrowth();
 }
@@ -41,7 +46,7 @@ export function saveGrowth(growth: StudentGrowth): void {
 }
 
 export function loadLevelProgress(): LevelProgress {
-  return getLevelProgress(loadGrowth().totalStars);
+  return toLevelProgress(loadGrowth());
 }
 
 export type AwardQuestionStarsResult = {
@@ -53,10 +58,10 @@ export type AwardQuestionStarsResult = {
 
 export function awardSessionStars(amount: number): AwardQuestionStarsResult {
   const before = loadGrowth();
-  const beforeLevel = getLevelProgress(before.totalStars).level;
+  const beforeLevel = toLevelProgress(before).level;
   const growth = addStars(before, amount);
   saveGrowth(growth);
-  const levelProgress = getLevelProgress(growth.totalStars);
+  const levelProgress = toLevelProgress(growth);
 
   return {
     growth,
@@ -68,11 +73,11 @@ export function awardSessionStars(amount: number): AwardQuestionStarsResult {
 
 export function awardQuestionStars(question: Question): AwardQuestionStarsResult {
   const before = loadGrowth();
-  const beforeLevel = getLevelProgress(before.totalStars).level;
+  const beforeLevel = toLevelProgress(before).level;
   const starsAdded = getStarsForQuestion(question);
   const growth = addStars(before, starsAdded);
   saveGrowth(growth);
-  const levelProgress = getLevelProgress(growth.totalStars);
+  const levelProgress = toLevelProgress(growth);
 
   return {
     growth,
@@ -92,10 +97,10 @@ export type AwardPerfectBonusResult = {
 
 export function awardPerfectBonus(): AwardPerfectBonusResult {
   const before = loadGrowth();
-  const beforeLevel = getLevelProgress(before.totalStars).level;
+  const beforeLevel = toLevelProgress(before).level;
   const growth = addStars(before, PERFECT_BONUS_STARS);
   saveGrowth(growth);
-  const levelProgress = getLevelProgress(growth.totalStars);
+  const levelProgress = toLevelProgress(growth);
 
   return {
     growth,
