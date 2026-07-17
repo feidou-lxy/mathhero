@@ -35,9 +35,35 @@ function isMeasurementUnit(unit: string): boolean {
 }
 
 function clampAnswerIndex(answer: number, optionCount: number): number {
-  if (answer >= 1 && answer <= optionCount) return answer - 1;
-  if (answer >= 0 && answer < optionCount) return answer;
-  return Math.max(0, Math.min(answer, optionCount - 1));
+  // 优先按 0-based 下标解析（与出题规范一致）
+  if (Number.isInteger(answer) && answer >= 0 && answer < optionCount) {
+    return answer;
+  }
+
+  // 兼容旧数据或 AI 误用 1-based 下标（如 3 表示第 3 项）
+  if (Number.isInteger(answer) && answer >= 1 && answer <= optionCount) {
+    return answer - 1;
+  }
+
+  return Math.max(0, Math.min(optionCount - 1, Math.floor(answer)));
+}
+
+function resolveChoiceAnswerIndex(
+  answer: number,
+  options: string[],
+  unit?: string,
+): number {
+  const normalizedOptions = options.map((option) => option.trim());
+  let resolved = clampAnswerIndex(answer, normalizedOptions.length);
+
+  if (unit && !isMeasurementUnit(unit)) {
+    const unitIndex = normalizedOptions.indexOf(unit.trim());
+    if (unitIndex >= 0) {
+      resolved = unitIndex;
+    }
+  }
+
+  return resolved;
 }
 
 function parseLegacyChoicePrompt(
@@ -88,6 +114,103 @@ function extractShapeOptions(prompt: string): string[] | null {
   return unique.length >= 2 ? unique : null;
 }
 
+type ComparisonEdge = {
+  higher: string;
+  lower: string;
+};
+
+function addComparison(
+  edges: ComparisonEdge[],
+  higher: string,
+  lower: string,
+  names: string[],
+): void {
+  if (!names.includes(higher) || !names.includes(lower) || higher === lower) {
+    return;
+  }
+
+  if (edges.some((edge) => edge.higher === higher && edge.lower === lower)) {
+    return;
+  }
+
+  edges.push({ higher, lower });
+}
+
+function extractLogicComparisons(prompt: string, names: string[]): ComparisonEdge[] {
+  const edges: ComparisonEdge[] = [];
+
+  for (const higher of names) {
+    for (const lower of names) {
+      if (higher === lower) continue;
+
+      if (prompt.includes(`${higher}比${lower}高`)) {
+        addComparison(edges, higher, lower, names);
+      }
+
+      if (prompt.includes(`${higher}比${lower}矮`)) {
+        addComparison(edges, lower, higher, names);
+      }
+    }
+  }
+
+  return edges;
+}
+
+function findUniqueExtremeOption(
+  options: string[],
+  edges: ComparisonEdge[],
+  kind: "max" | "min",
+): number | null {
+  const indexByName = new Map(options.map((name, index) => [name, index]));
+  const beats = Array.from({ length: options.length }, () =>
+    Array<boolean>(options.length).fill(false),
+  );
+
+  for (const { higher, lower } of edges) {
+    const higherIndex = indexByName.get(higher);
+    const lowerIndex = indexByName.get(lower);
+    if (higherIndex === undefined || lowerIndex === undefined) continue;
+    beats[higherIndex][lowerIndex] = true;
+  }
+
+  for (let pivot = 0; pivot < options.length; pivot += 1) {
+    for (let left = 0; left < options.length; left += 1) {
+      for (let right = 0; right < options.length; right += 1) {
+        beats[left][right] =
+          beats[left][right] || (beats[left][pivot] && beats[pivot][right]);
+      }
+    }
+  }
+
+  let uniqueIndex: number | null = null;
+
+  for (let candidate = 0; candidate < options.length; candidate += 1) {
+    const matches = options.every((_, other) => {
+      if (candidate === other) return true;
+      return kind === "max"
+        ? beats[candidate][other]
+        : beats[other][candidate];
+    });
+
+    if (!matches) continue;
+    if (uniqueIndex !== null) return null;
+    uniqueIndex = candidate;
+  }
+
+  return uniqueIndex;
+}
+
+function resolveLogicAnswerIndex(prompt: string, options: string[]): number | null {
+  const asksMax = /谁最高|最高的是谁|谁更高/.test(prompt);
+  const asksMin = /谁最矮|最矮的是谁|谁更矮/.test(prompt);
+  if (!asksMax && !asksMin) return null;
+
+  const edges = extractLogicComparisons(prompt, options);
+  if (edges.length === 0) return null;
+
+  return findUniqueExtremeOption(options, edges, asksMax ? "max" : "min");
+}
+
 export function isChoiceQuestion(question: Question): boolean {
   return Array.isArray(question.options) && question.options.length >= 2;
 }
@@ -116,10 +239,19 @@ export function formatUserAnswerDisplay(
 
 export function normalizeQuestion(question: Question): Question {
   if (question.options && question.options.length >= 2) {
+    const options = question.options.map((option) => option.trim());
+    const logicAnswerIndex =
+      question.category === "logic_reasoning"
+        ? resolveLogicAnswerIndex(question.prompt, options)
+        : null;
+
     return {
       ...question,
-      options: question.options.map((option) => option.trim()),
-      answer: clampAnswerIndex(question.answer, question.options.length),
+      options,
+      answer:
+        logicAnswerIndex ??
+        resolveChoiceAnswerIndex(question.answer, options, question.unit),
+      unit: undefined,
     };
   }
 
@@ -155,7 +287,9 @@ export function normalizeQuestion(question: Question): Question {
     return {
       ...question,
       options: personNames,
-      answer: clampAnswerIndex(question.answer, personNames.length),
+      answer:
+        resolveLogicAnswerIndex(question.prompt, personNames) ??
+        clampAnswerIndex(question.answer, personNames.length),
       unit: undefined,
     };
   }
